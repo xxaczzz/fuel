@@ -1,0 +1,13 @@
+{
+  "name": "fuel-app",
+  "version": "1.0.0",
+  "description": "FUEL — Smart Nutrition Journal. Photo-based food tracking, smart meal plans, and self-adjusting calorie targets.",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler pages deploy . --project-name=fuel",
+    "dev": "wrangler pages dev . --port 8788"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
