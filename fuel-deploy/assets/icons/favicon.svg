@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#0a0a0a"/>
-  <g transform="translate(32 33) rotate(-45) translate(-12 -12)">
-    <path d="M0 0 L24 0 L24 24 L0 24 Q-2 12 0 0 Z" fill="#d4ff3a" rx="12"/>
-    <rect x="0" y="0" width="24" height="24" rx="12" ry="12" fill="#d4ff3a"/>
-    <path d="M 12 0 A 12 12 0 0 1 24 12 L 24 24 L 0 24 L 0 12 A 12 12 0 0 1 12 0 Z" fill="#d4ff3a"/>
-    <path d="M 12 6 A 6 6 0 0 1 18 12 L 18 18 L 6 18 L 6 12 A 6 6 0 0 1 12 6 Z" fill="#0a0a0a"/>
-  </g>
+  <!-- Letter F: bold geometric -->
+  <path d="M 18 14 L 18 50 L 26 50 L 26 36 L 40 36 L 40 30 L 26 30 L 26 22 L 44 22 L 44 14 Z"
+        fill="#d4ff3a"/>
+  <!-- Small leaf above F -->
+  <path d="M 36 8 Q 44 8 44 14 Q 44 16 42 17 Q 38 14 36 10 Z"
+        fill="#d4ff3a"/>
 </svg>

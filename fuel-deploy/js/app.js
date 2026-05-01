@@ -290,10 +290,8 @@ let onboardData = {
   activity: null
 };
 
-function renderOnboarding() {
-  showNav(false);
-
-  const steps = [
+function onboardSteps() {
+  return [
     { type: 'welcome' },
     { type: 'choice', field: 'sex', title: 'Are you...', sub: 'We use this to calculate your metabolic rate.',
       options: [
@@ -321,6 +319,12 @@ function renderOnboarding() {
     },
     { type: 'finish' }
   ];
+}
+
+function renderOnboarding() {
+  showNav(false);
+
+  const steps = onboardSteps();
 
   const step = steps[onboardData.step];
 
@@ -328,11 +332,8 @@ function renderOnboarding() {
     render(`
       <div class="onboard">
         <div class="onboard-step" style="text-align:center;">
-          <div style="display:flex;justify-content:center;margin-bottom:32px;">
-            <div class="logo-mark" style="width:64px;height:64px;"></div>
-          </div>
-          <h1 class="onboard-title" style="font-size:48px;">FUEL</h1>
-          <p class="eyebrow" style="margin-bottom:24px;">Smart Nutrition Journal</p>
+          <h1 class="onboard-title" style="font-size:96px;letter-spacing:-0.04em;line-height:1;margin-bottom:8px;">FUEL</h1>
+          <p class="eyebrow" style="margin-bottom:32px;">Smart Nutrition Journal</p>
           <p class="onboard-sub" style="text-align:left;">
             Track your calories with photos, get meal plans tailored to your budget and time, and watch your daily target self-adjust as you progress.
           </p>
@@ -377,12 +378,11 @@ function renderOnboarding() {
                max="${step.max}"
                ${step.step ? `step="${step.step}"` : ''}
                style="font-size:48px;padding:24px;"
-               oninput="onboardData['${step.field}'] = this.value ? parseFloat(this.value) : null">
+               oninput="onboardData['${step.field}'] = this.value ? parseFloat(this.value) : null"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();tryAdvanceOnboard();}">
       </div>
     `;
   }
-
-  const canContinue = !!onboardData[step.field];
 
   render(`
     <div class="onboard">
@@ -395,9 +395,7 @@ function renderOnboarding() {
       </div>
       <div style="display:flex;gap:10px;margin-top:24px;">
         <button class="btn btn-ghost" onclick="onboardData.step--;renderOnboarding()">Back</button>
-        <button class="btn btn-primary" style="flex:1;${canContinue ? '' : 'opacity:0.4;'}"
-                ${canContinue ? '' : 'disabled'}
-                onclick="onboardData.step++;renderOnboarding()">
+        <button class="btn btn-primary" style="flex:1;" onclick="tryAdvanceOnboard()">
           Continue
         </button>
       </div>
@@ -421,6 +419,42 @@ function selectOnboard(field, value) {
       renderOnboarding();
     }
   }, 250);
+}
+
+// Validates the current onboarding step before advancing.
+// Reads number inputs directly from the DOM so the value can't be stale.
+function tryAdvanceOnboard() {
+  const steps = onboardSteps();
+  const step = steps[onboardData.step];
+  if (!step) return;
+
+  if (step.type === 'number') {
+    // Always read live from DOM — the oninput handler may not have fired yet
+    const inp = document.getElementById('onboard-num-input');
+    const raw = inp ? inp.value : '';
+    const num = raw ? parseFloat(raw) : NaN;
+    if (isNaN(num)) {
+      toast('Please enter a number', 'danger');
+      return;
+    }
+    if (step.min !== undefined && num < step.min) {
+      toast(`Minimum is ${step.min}`, 'danger');
+      return;
+    }
+    if (step.max !== undefined && num > step.max) {
+      toast(`Maximum is ${step.max}`, 'danger');
+      return;
+    }
+    onboardData[step.field] = num;
+  } else if (step.type === 'choice') {
+    if (!onboardData[step.field]) {
+      toast('Please pick an option', 'danger');
+      return;
+    }
+  }
+
+  onboardData.step++;
+  renderOnboarding();
 }
 
 function finishOnboarding() {
@@ -475,7 +509,7 @@ function renderToday() {
   render(`
     <div class="screen">
       <div class="header">
-        <div class="logo"><span class="logo-mark"></span> FUEL</div>
+        <div class="logo">FUEL</div>
         <button class="btn-icon" onclick="openSettings()" aria-label="Settings">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <circle cx="12" cy="12" r="3"/>
@@ -1422,7 +1456,7 @@ function renderBody() {
   render(`
     <div class="screen">
       <div class="header">
-        <div class="logo"><span class="logo-mark"></span> FUEL</div>
+        <div class="logo">FUEL</div>
         <button class="btn-icon" onclick="openSettings()" aria-label="Settings">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         </button>
@@ -1558,7 +1592,7 @@ function renderPlan() {
   render(`
     <div class="screen">
       <div class="header">
-        <div class="logo"><span class="logo-mark"></span> FUEL</div>
+        <div class="logo">FUEL</div>
         <div class="eyebrow">Plan</div>
       </div>
 
@@ -1777,7 +1811,7 @@ function renderLog() {
   render(`
     <div class="screen">
       <div class="header">
-        <div class="logo"><span class="logo-mark"></span> FUEL</div>
+        <div class="logo">FUEL</div>
         <div class="eyebrow">Log</div>
       </div>
 
@@ -1821,6 +1855,9 @@ function renderLog() {
                   ${Math.round(pct)}%
                 </div>
               ` : ''}
+              <button class="btn-icon-sm" onclick="event.stopPropagation();openShareDay('${d}')" aria-label="Share day" style="background:transparent;border:none;color:var(--text-dim);padding:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              </button>
             </div>
           </div>
         `;
@@ -1833,6 +1870,383 @@ function goToDate(date) {
   STATE.currentDate = date;
   STATE.view = 'today';
   renderApp();
+}
+
+// ============== SHARE: DAY SUMMARY ==============
+// Renders the day into a 1080x1350 PNG and triggers Web Share API or download.
+
+async function openShareDay(date) {
+  // Show loading modal first
+  openModal(`
+    <div style="position:relative;text-align:center;padding:20px 0;">
+      <div class="spinner" style="margin:0 auto 16px;"></div>
+      <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);">
+        Generating share card...
+      </div>
+    </div>
+  `);
+
+  try {
+    // Make sure fonts are loaded before drawing — otherwise canvas falls back to system fonts
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+
+    const blob = await renderShareCard(date);
+    const url = URL.createObjectURL(blob);
+
+    const dt = new Date(date);
+    const filename = `fuel-${date}.png`;
+
+    // Detect Web Share API with file support
+    const file = new File([blob], filename, { type: 'image/png' });
+    const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+
+    openModal(`
+      <div style="position:relative;">
+        <button class="modal-close-btn" onclick="closeShareModal()" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+        <h2 class="modal-title">Share day</h2>
+        <div style="background:var(--bg-elev-2);border-radius:12px;overflow:hidden;margin-bottom:16px;">
+          <img src="${url}" alt="Day summary" style="width:100%;display:block;">
+        </div>
+        <div style="display:grid;grid-template-columns:${canShareFiles ? '1fr 1fr' : '1fr'};gap:10px;">
+          ${canShareFiles ? `
+            <button class="btn btn-secondary" onclick="downloadShareImage()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Download
+            </button>
+            <button class="btn btn-primary" onclick="shareDayImage()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+              Share
+            </button>
+          ` : `
+            <button class="btn btn-primary" onclick="downloadShareImage()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Download image
+            </button>
+          `}
+        </div>
+        ${!canShareFiles ? `<div style="margin-top:12px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);text-align:center;letter-spacing:0.05em;">On mobile: long-press image to save</div>` : ''}
+      </div>
+    `);
+
+    // Stash the blob/url so the share button can grab it
+    window._shareBlob = blob;
+    window._shareUrl = url;
+    window._shareFilename = filename;
+  } catch (err) {
+    console.error(err);
+    closeModal();
+    toast('Could not generate share card', 'danger');
+  }
+}
+
+function closeShareModal() {
+  if (window._shareUrl) {
+    URL.revokeObjectURL(window._shareUrl);
+    window._shareUrl = null;
+    window._shareBlob = null;
+    window._shareFilename = null;
+  }
+  closeModal();
+}
+
+function downloadShareImage() {
+  if (!window._shareUrl) return;
+  const a = document.createElement('a');
+  a.href = window._shareUrl;
+  a.download = window._shareFilename || 'fuel-day.png';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Downloaded');
+}
+
+async function shareDayImage() {
+  const blob = window._shareBlob;
+  const filename = window._shareFilename;
+  if (!blob) return;
+  try {
+    const file = new File([blob], filename, { type: 'image/png' });
+    await navigator.share({
+      files: [file],
+      title: 'FUEL — Day summary',
+      text: 'My nutrition log'
+    });
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error(err);
+      toast('Sharing failed', 'danger');
+    }
+  }
+}
+
+// Calculate streak ending on a given date (consecutive days with logged meals, looking backwards)
+function streakEndingOn(date) {
+  let streak = 0;
+  const startDate = new Date(date);
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() - i);
+    const k = todayKey(d);
+    const t = dayTotals(k);
+    if (t.kcal > 0) streak++;
+    else break;
+  }
+  return streak;
+}
+
+async function renderShareCard(date) {
+  const W = 1080;
+  const H = 1350;
+
+  const day = STATE.log[date] || { meals: [] };
+  const totals = dayTotals(date);
+  const target = adjustedTarget(date);
+  const pct = Math.round((totals.kcal / target.kcal) * 100);
+  const mealCount = (day.meals || []).length;
+  const streak = streakEndingOn(date);
+
+  const dt = new Date(date);
+  const isToday = date === todayKey();
+
+  // Color palette (mirrors CSS variables)
+  const C = {
+    bg: '#0a0a0a',
+    bgElev: '#141414',
+    bgElev2: '#1c1c1c',
+    bgElev3: '#242424',
+    border: '#262626',
+    text: '#f5f5f5',
+    textDim: '#9a9a9a',
+    textMuted: '#5a5a5a',
+    accent: '#d4ff3a',
+    warning: '#ffb83a',
+    danger: '#ff4d4d',
+    macroP: '#ff6b9d',
+    macroC: '#4dc4ff',
+    macroF: '#ffb83a'
+  };
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // === BACKGROUND ===
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle radial glow top-right (like FORGE hero)
+  const grd = ctx.createRadialGradient(W * 0.85, H * 0.05, 0, W * 0.85, H * 0.05, 600);
+  grd.addColorStop(0, 'rgba(212, 255, 58, 0.10)');
+  grd.addColorStop(1, 'rgba(212, 255, 58, 0)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+
+  // === HEADER ===
+  // FUEL wordmark — large, no mark
+  const headerY = 100;
+  ctx.fillStyle = C.text;
+  ctx.font = 'bold 64px "Archivo Black", sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText('FUEL', 80, headerY);
+
+  // Date (top right)
+  ctx.fillStyle = C.textDim;
+  ctx.font = '500 22px "JetBrains Mono", monospace';
+  ctx.textAlign = 'right';
+  const weekday = dt.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+  const monthDay = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+  ctx.fillText(`${weekday} · ${monthDay}`, W - 80, headerY);
+
+  // === CALORIE RING ===
+  const ringCX = W / 2;
+  const ringCY = 470;
+  const ringR = 200;
+  const ringWidth = 22;
+
+  // Background ring
+  ctx.strokeStyle = C.bgElev3;
+  ctx.lineWidth = ringWidth;
+  ctx.beginPath();
+  ctx.arc(ringCX, ringCY, ringR, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Foreground ring
+  const ringPct = Math.min(1, totals.kcal / target.kcal);
+  let ringColor = C.accent;
+  if (totals.kcal > target.kcal * 1.1) ringColor = C.danger;
+  else if (totals.kcal > target.kcal) ringColor = C.warning;
+
+  ctx.strokeStyle = ringColor;
+  ctx.lineWidth = ringWidth;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(ringCX, ringCY, ringR, -Math.PI / 2, -Math.PI / 2 + ringPct * Math.PI * 2);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // Ring center text — big number
+  ctx.fillStyle = C.text;
+  ctx.font = 'bold 110px "Archivo Black", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(String(totals.kcal), ringCX, ringCY + 10);
+
+  // " / target kcal" below
+  ctx.fillStyle = C.textDim;
+  ctx.font = '500 26px "JetBrains Mono", monospace';
+  ctx.fillText(`/ ${target.kcal} KCAL`, ringCX, ringCY + 50);
+
+  // Percentage label below ring
+  ctx.fillStyle = ringColor;
+  ctx.font = 'bold 32px "Archivo Black", sans-serif';
+  ctx.fillText(`${pct}% OF TARGET`, ringCX, ringCY + ringR + 70);
+
+  // === MACRO BARS ===
+  const macroY = 800;
+  const macroW = 280;
+  const macroGap = 30;
+  const macroStartX = (W - 3 * macroW - 2 * macroGap) / 2;
+
+  const macros = [
+    { key: 'p', label: 'PROTEIN', color: C.macroP, value: Math.round(totals.p), target: target.p },
+    { key: 'c', label: 'CARBS', color: C.macroC, value: Math.round(totals.c), target: target.c },
+    { key: 'f', label: 'FAT', color: C.macroF, value: Math.round(totals.f), target: target.f }
+  ];
+
+  macros.forEach((m, i) => {
+    const x = macroStartX + i * (macroW + macroGap);
+
+    // Card background
+    ctx.fillStyle = C.bgElev;
+    drawRoundedRect(ctx, x, macroY, macroW, 130, 18);
+    ctx.fill();
+    ctx.strokeStyle = C.border;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = C.textMuted;
+    ctx.font = '500 16px "JetBrains Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(m.label, x + 22, macroY + 32);
+
+    // Target on right
+    ctx.fillStyle = C.textDim;
+    ctx.font = '400 16px "JetBrains Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${m.target}g`, x + macroW - 22, macroY + 32);
+
+    // Value
+    ctx.fillStyle = C.text;
+    ctx.font = 'bold 38px "Archivo Black", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    const valueY = macroY + 78;
+    ctx.fillText(`${m.value}`, x + 22, valueY);
+    const valueWidth = ctx.measureText(`${m.value}`).width;
+    // " g" suffix — slightly smaller, baseline-aligned to value
+    ctx.fillStyle = C.textMuted;
+    ctx.font = '500 20px "JetBrains Mono", monospace';
+    ctx.fillText(' g', x + 22 + valueWidth + 4, valueY);
+
+    // Progress bar
+    const barX = x + 22;
+    const barY = macroY + 102;
+    const barW = macroW - 44;
+    const barH = 8;
+    ctx.fillStyle = C.bgElev3;
+    drawRoundedRect(ctx, barX, barY, barW, barH, 4);
+    ctx.fill();
+    const fillPct = Math.min(1, m.value / m.target);
+    if (fillPct > 0) {
+      ctx.fillStyle = m.color;
+      drawRoundedRect(ctx, barX, barY, barW * fillPct, barH, 4);
+      ctx.fill();
+    }
+  });
+
+  // === SUMMARY ROWS ===
+  const rows = [];
+  if (mealCount > 0) rows.push({ icon: '🍽️', text: `${mealCount} ${mealCount === 1 ? 'meal' : 'meals'} logged` });
+  if (day.trained) rows.push({ icon: '💪', text: 'Training day', color: C.accent });
+  if (day.weight) rows.push({ icon: '⚖️', text: `${day.weight} kg` });
+  if (day.steps) rows.push({ icon: '👟', text: `${day.steps.toLocaleString('en-US')} steps` });
+  if (streak >= 2) rows.push({ icon: '🔥', text: `${streak}-day streak`, color: C.accent });
+
+  const rowsStartY = 1010;
+  const rowHeight = 50;
+  const rowsX = 130;
+  rows.forEach((r, i) => {
+    const y = rowsStartY + i * rowHeight;
+    ctx.font = '32px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(r.icon, rowsX, y);
+
+    ctx.fillStyle = r.color || C.text;
+    ctx.font = '600 26px "Inter Tight", sans-serif';
+    ctx.fillText(r.text, rowsX + 60, y);
+  });
+
+  // === FOOTER ===
+  // Divider
+  ctx.strokeStyle = C.border;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(80, H - 100);
+  ctx.lineTo(W - 80, H - 100);
+  ctx.stroke();
+
+  // Footer text
+  ctx.fillStyle = C.textMuted;
+  ctx.font = '500 22px "JetBrains Mono", monospace';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('fuel-ey3.pages.dev', W - 80, H - 60);
+
+  // Convert canvas to blob
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(b => {
+      if (b) resolve(b);
+      else reject(new Error('Canvas toBlob failed'));
+    }, 'image/png', 0.95);
+  });
+}
+
+// Canvas helper: rounded rectangle with all four corners equal
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// Canvas helper: rounded rectangle with per-corner radii (for the flame logo shape)
+function drawRoundedRectAsymmetric(ctx, x, y, w, h, rTL, rTR, rBR, rBL) {
+  ctx.beginPath();
+  ctx.moveTo(x + rTL, y);
+  ctx.lineTo(x + w - rTR, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rTR);
+  ctx.lineTo(x + w, y + h - rBR);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - rBR, y + h);
+  ctx.lineTo(x + rBL, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - rBL);
+  ctx.lineTo(x, y + rTL);
+  ctx.quadraticCurveTo(x, y, x + rTL, y);
+  ctx.closePath();
 }
 
 // ============== SCREEN: STATS ==============
@@ -1888,7 +2302,7 @@ function renderStats() {
   render(`
     <div class="screen">
       <div class="header">
-        <div class="logo"><span class="logo-mark"></span> FUEL</div>
+        <div class="logo">FUEL</div>
         <div class="eyebrow">Progress</div>
       </div>
 
