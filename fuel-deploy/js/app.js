@@ -1573,8 +1573,7 @@ function renderPlan() {
         ${[
           { id: 'any', label: 'Any' },
           { id: 'russian', label: 'Russian' },
-          { id: 'caucasian', label: 'Caucasian' },
-          { id: 'asian', label: 'Asian' }
+          { id: 'caucasian', label: 'Caucasian' }
         ].map(c => `<span class="pill ${planFilters.cuisine === c.id ? 'active' : ''}" onclick="setPlanFilter('cuisine','${c.id}')">${c.label}</span>`).join('')}
       </div>
 

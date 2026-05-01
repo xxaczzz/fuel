@@ -9,8 +9,8 @@ Companion app to [FORGE](https://github.com/your-forge-repo) (workout tracker). 
 - **Photo → Food**: Snap a picture of any meal — Claude Vision identifies the dish, estimates portion, and asks 1-3 clarifying questions about preparation that meaningfully affect calories.
 - **Smart targets**: Daily calorie/macro targets auto-calculated from your stats and goal. Every week, FUEL compares your actual weight trend against the intended trajectory and nudges your target by ±100 kcal if you're off course.
 - **Training-aware**: Mark a training day → automatic +150 (cut) or +250 (bulk/maintain) kcal bonus.
-- **Meal plan generator**: Filter by cuisine (Russian / Caucasian / Asian / Universal), max time, difficulty, and budget. Get a full day of recipes within 10% of your target.
-- **150+ foods database**: Curated catalog with macros, including Russian (borscht, pelmeni, syrniki...), Caucasian (khachapuri, khinkali, satsivi...), Asian (sushi, pad thai, ramen...), plus universal staples.
+- **Meal plan generator**: Filter by cuisine (Russian / Caucasian / Universal), max time, difficulty, and budget. Get a full day of recipes within 10% of your target.
+- **130+ foods database**: Curated catalog with macros, including Russian (borscht, pelmeni, syrniki...), Caucasian (khachapuri, khinkali, satsivi...), plus universal staples.
 - **30+ recipes**: Step-by-step instructions, scaled per serving.
 - **Offline-first PWA**: Works without internet (except photo recognition). Install to home screen on iOS/Android.
 - **Privacy**: All data lives in your browser. No accounts, no servers. Photos are sent directly from your device to api.anthropic.com — never via any third party.

@@ -1,5 +1,7 @@
 // FUEL — Service Worker
-const CACHE_NAME = 'fuel-v1';
+// Версия билда — меняется при каждом релизе
+const BUILD_VERSION = '2026-05-01-2034';
+const CACHE_NAME = `fuel-${BUILD_VERSION}`;
 const ASSETS = [
   '/',
   '/index.html',

@@ -100,28 +100,6 @@ const RECIPES = [
     ]
   },
   {
-    id: 'rice-porridge',
-    name: 'Rice porridge with apple',
-    emoji: '🍚',
-    cuisine: 'asian',
-    meal: 'breakfast',
-    complexity: 1,
-    time: 25,
-    cost: 1,
-    servings: 1,
-    ingredients: [
-      { foodId: 'rice-white', amount: 60 },
-      { foodId: 'milk-skim', amount: 250 },
-      { foodId: 'apple', amount: 100 },
-      { foodId: 'honey', amount: 10 }
-    ],
-    steps: [
-      'Combine rice and milk in a saucepan.',
-      'Simmer on low for 20 minutes, stirring often.',
-      'Top with diced apple and honey.'
-    ]
-  },
-  {
     id: 'khachapuri-egg',
     name: 'Khachapuri with egg',
     emoji: '🫓',
@@ -257,57 +235,6 @@ const RECIPES = [
     ]
   },
   {
-    id: 'pad-thai-shrimp',
-    name: 'Shrimp pad thai',
-    emoji: '🍜',
-    cuisine: 'asian',
-    meal: 'lunch',
-    complexity: 3,
-    time: 30,
-    cost: 3,
-    servings: 1,
-    ingredients: [
-      { foodId: 'rice-noodles', amount: 200 },
-      { foodId: 'shrimp', amount: 150 },
-      { foodId: 'egg', amount: 1 },
-      { foodId: 'peanuts', amount: 15 },
-      { foodId: 'soy-sauce', amount: 15 },
-      { foodId: 'coconut-oil', amount: 10 }
-    ],
-    steps: [
-      'Soak noodles in hot water until al dente.',
-      'Heat oil in wok, sear shrimp 1 min per side; remove.',
-      'Scramble egg in same wok.',
-      'Toss noodles with soy sauce, return shrimp.',
-      'Top with crushed peanuts.'
-    ]
-  },
-  {
-    id: 'fried-rice-veg',
-    name: 'Veggie fried rice',
-    emoji: '🍚',
-    cuisine: 'asian',
-    meal: 'lunch',
-    complexity: 1,
-    time: 15,
-    cost: 1,
-    servings: 1,
-    ingredients: [
-      { foodId: 'rice-white', amount: 200 },
-      { foodId: 'egg', amount: 2 },
-      { foodId: 'carrot', amount: 50 },
-      { foodId: 'green-beans', amount: 50 },
-      { foodId: 'soy-sauce', amount: 15 },
-      { foodId: 'sunflower-oil', amount: 10 }
-    ],
-    steps: [
-      'Heat oil, scramble eggs and set aside.',
-      'Sauté diced carrot and green beans 3 minutes.',
-      'Add cold cooked rice, toss with soy sauce.',
-      'Return eggs, mix and serve.'
-    ]
-  },
-  {
     id: 'tuna-salad-bowl',
     name: 'Tuna power bowl',
     emoji: '🥗',
@@ -377,32 +304,6 @@ const RECIPES = [
       'Toss asparagus and sweet potato with oil.',
       'Roast veggies 15 minutes.',
       'Add seasoned salmon, roast another 10 minutes.'
-    ]
-  },
-  {
-    id: 'chicken-stir-fry',
-    name: 'Chicken stir-fry',
-    emoji: '🥡',
-    cuisine: 'asian',
-    meal: 'dinner',
-    complexity: 2,
-    time: 20,
-    cost: 2,
-    servings: 1,
-    ingredients: [
-      { foodId: 'chicken-breast', amount: 200 },
-      { foodId: 'rice-jasmine', amount: 150 },
-      { foodId: 'bell-pepper', amount: 100 },
-      { foodId: 'broccoli', amount: 100 },
-      { foodId: 'soy-sauce', amount: 20 },
-      { foodId: 'sunflower-oil', amount: 10 }
-    ],
-    steps: [
-      'Cook rice.',
-      'Heat oil in wok over high heat.',
-      'Stir-fry sliced chicken 4 minutes.',
-      'Add veggies, toss 3 minutes.',
-      'Add soy sauce, serve over rice.'
     ]
   },
   {
@@ -510,51 +411,6 @@ const RECIPES = [
       'Preheat oven to 200°C.',
       'Cube potatoes, toss with oil, roast 20 minutes.',
       'Add cod with lemon slices, bake 12 more minutes.'
-    ]
-  },
-  {
-    id: 'tofu-veg',
-    name: 'Tofu with veggies',
-    emoji: '🥡',
-    cuisine: 'asian',
-    meal: 'dinner',
-    complexity: 2,
-    time: 25,
-    cost: 1,
-    servings: 1,
-    ingredients: [
-      { foodId: 'tofu', amount: 200 },
-      { foodId: 'rice-jasmine', amount: 150 },
-      { foodId: 'broccoli', amount: 120 },
-      { foodId: 'soy-sauce', amount: 20 },
-      { foodId: 'coconut-oil', amount: 10 }
-    ],
-    steps: [
-      'Cook rice.',
-      'Cube and pat tofu dry.',
-      'Heat oil, sear tofu until golden on all sides.',
-      'Add broccoli, soy sauce, toss 3 minutes.',
-      'Serve over rice.'
-    ]
-  },
-  {
-    id: 'curry-chicken-rice',
-    name: 'Chicken curry with rice',
-    emoji: '🍛',
-    cuisine: 'asian',
-    meal: 'dinner',
-    complexity: 3,
-    time: 50,
-    cost: 2,
-    servings: 1,
-    ingredients: [
-      { foodId: 'curry-chicken', amount: 300 },
-      { foodId: 'rice-jasmine', amount: 200 }
-    ],
-    steps: [
-      'Heat curry to a simmer.',
-      'Cook rice.',
-      'Plate rice, ladle curry over.'
     ]
   },
   {
@@ -676,24 +532,6 @@ const RECIPES = [
     ],
     steps: [
       'Mix walnuts with honey in a small bowl.'
-    ]
-  },
-  {
-    id: 'edamame-snack',
-    name: 'Edamame with sea salt',
-    emoji: '🟢',
-    cuisine: 'asian',
-    meal: 'snack',
-    complexity: 1,
-    time: 5,
-    cost: 1,
-    servings: 1,
-    ingredients: [
-      { foodId: 'edamame', amount: 150 }
-    ],
-    steps: [
-      'Steam edamame for 4 minutes.',
-      'Sprinkle with flaky sea salt.'
     ]
   },
   {

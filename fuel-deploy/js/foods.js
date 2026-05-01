@@ -1,8 +1,8 @@
 /* =============================================
    FUEL — Food Database
    Calorie & macro values per 100g (or per unit where noted).
-   Curated list of ~150 common foods covering Russian, Caucasian,
-   Asian, and Western cuisines.
+   Curated list of ~140 common foods covering Russian, Caucasian,
+   and Western cuisines.
 ============================================= */
 
 // unit: 'g' = per 100g, 'ml' = per 100ml, 'piece' = per piece (with avgGrams for conversion)
@@ -41,9 +41,9 @@ const FOODS = [
   { id: 'butter', name: 'Butter', emoji: '🧈', cat: 'fat', kcal: 717, p: 0.9, c: 0.1, f: 81, unit: 'g', tags: ['dairy-eggs','high-fat'] },
 
   // ===== GRAINS & BREAD =====
-  { id: 'rice-white', name: 'White rice (cooked)', emoji: '🍚', cat: 'carb', kcal: 130, p: 2.7, c: 28, f: 0.3, unit: 'g', tags: ['grain','asian'] },
+  { id: 'rice-white', name: 'White rice (cooked)', emoji: '🍚', cat: 'carb', kcal: 130, p: 2.7, c: 28, f: 0.3, unit: 'g', tags: ['grain'] },
   { id: 'rice-brown', name: 'Brown rice (cooked)', emoji: '🍚', cat: 'carb', kcal: 112, p: 2.6, c: 23, f: 0.9, unit: 'g', tags: ['grain'] },
-  { id: 'rice-jasmine', name: 'Jasmine rice (cooked)', emoji: '🍚', cat: 'carb', kcal: 129, p: 2.7, c: 28, f: 0.2, unit: 'g', tags: ['grain','asian'] },
+  { id: 'rice-jasmine', name: 'Jasmine rice (cooked)', emoji: '🍚', cat: 'carb', kcal: 129, p: 2.7, c: 28, f: 0.2, unit: 'g', tags: ['grain'] },
   { id: 'buckwheat', name: 'Buckwheat (cooked)', emoji: '🌾', cat: 'carb', kcal: 92, p: 3.4, c: 20, f: 0.6, unit: 'g', tags: ['grain','russian'] },
   { id: 'oats', name: 'Oats (dry)', emoji: '🥣', cat: 'carb', kcal: 389, p: 17, c: 66, f: 7, unit: 'g', tags: ['grain'] },
   { id: 'oats-cooked', name: 'Oatmeal (cooked w/ water)', emoji: '🥣', cat: 'carb', kcal: 71, p: 2.5, c: 12, f: 1.5, unit: 'g', tags: ['grain'] },
@@ -54,8 +54,8 @@ const FOODS = [
   { id: 'bread-whole', name: 'Whole wheat bread', emoji: '🍞', cat: 'carb', kcal: 247, p: 13, c: 41, f: 4.2, unit: 'g', tags: ['grain'] },
   { id: 'lavash', name: 'Lavash', emoji: '🫓', cat: 'carb', kcal: 277, p: 8, c: 56, f: 1.2, unit: 'g', tags: ['grain','caucasian'] },
   { id: 'tortilla', name: 'Flour tortilla', emoji: '🫓', cat: 'carb', kcal: 304, p: 8, c: 50, f: 8, unit: 'g', tags: ['grain'] },
-  { id: 'noodles-egg', name: 'Egg noodles (cooked)', emoji: '🍜', cat: 'carb', kcal: 138, p: 4.5, c: 25, f: 2.1, unit: 'g', tags: ['grain','asian'] },
-  { id: 'rice-noodles', name: 'Rice noodles (cooked)', emoji: '🍜', cat: 'carb', kcal: 109, p: 1.8, c: 25, f: 0.2, unit: 'g', tags: ['grain','asian'] },
+  { id: 'noodles-egg', name: 'Egg noodles (cooked)', emoji: '🍜', cat: 'carb', kcal: 138, p: 4.5, c: 25, f: 2.1, unit: 'g', tags: ['grain'] },
+  { id: 'rice-noodles', name: 'Rice noodles (cooked)', emoji: '🍜', cat: 'carb', kcal: 109, p: 1.8, c: 25, f: 0.2, unit: 'g', tags: ['grain'] },
 
   // ===== STARCHES & POTATOES =====
   { id: 'potato', name: 'Potato (boiled)', emoji: '🥔', cat: 'carb', kcal: 87, p: 1.9, c: 20, f: 0.1, unit: 'g', tags: ['starch','russian'] },
@@ -67,8 +67,8 @@ const FOODS = [
   { id: 'chickpeas', name: 'Chickpeas (cooked)', emoji: '🫘', cat: 'protein', kcal: 164, p: 8.9, c: 27, f: 2.6, unit: 'g', tags: ['legume','vegan','caucasian'] },
   { id: 'black-beans', name: 'Black beans (cooked)', emoji: '🫘', cat: 'protein', kcal: 132, p: 8.9, c: 24, f: 0.5, unit: 'g', tags: ['legume','vegan'] },
   { id: 'kidney-beans', name: 'Kidney beans (cooked)', emoji: '🫘', cat: 'protein', kcal: 127, p: 8.7, c: 23, f: 0.5, unit: 'g', tags: ['legume','vegan','caucasian'] },
-  { id: 'tofu', name: 'Tofu (firm)', emoji: '🥡', cat: 'protein', kcal: 144, p: 17, c: 3, f: 9, unit: 'g', tags: ['legume','vegan','asian'] },
-  { id: 'edamame', name: 'Edamame', emoji: '🟢', cat: 'protein', kcal: 122, p: 11, c: 10, f: 5, unit: 'g', tags: ['legume','vegan','asian'] },
+  { id: 'tofu', name: 'Tofu (firm)', emoji: '🥡', cat: 'protein', kcal: 144, p: 17, c: 3, f: 9, unit: 'g', tags: ['legume','vegan'] },
+  { id: 'edamame', name: 'Edamame', emoji: '🟢', cat: 'protein', kcal: 122, p: 11, c: 10, f: 5, unit: 'g', tags: ['legume','vegan'] },
   { id: 'hummus', name: 'Hummus', emoji: '🟡', cat: 'protein', kcal: 166, p: 7.9, c: 14, f: 9.6, unit: 'g', tags: ['legume','vegan','caucasian'] },
 
   // ===== VEGETABLES =====
@@ -101,7 +101,7 @@ const FOODS = [
   { id: 'blueberry', name: 'Blueberries', emoji: '🫐', cat: 'fruit', kcal: 57, p: 0.7, c: 14, f: 0.3, unit: 'g', tags: ['fruit'] },
   { id: 'pear', name: 'Pear', emoji: '🍐', cat: 'fruit', kcal: 57, p: 0.4, c: 15, f: 0.1, unit: 'g', tags: ['fruit'] },
   { id: 'pineapple', name: 'Pineapple', emoji: '🍍', cat: 'fruit', kcal: 50, p: 0.5, c: 13, f: 0.1, unit: 'g', tags: ['fruit'] },
-  { id: 'mango', name: 'Mango', emoji: '🥭', cat: 'fruit', kcal: 60, p: 0.8, c: 15, f: 0.4, unit: 'g', tags: ['fruit','asian'] },
+  { id: 'mango', name: 'Mango', emoji: '🥭', cat: 'fruit', kcal: 60, p: 0.8, c: 15, f: 0.4, unit: 'g', tags: ['fruit'] },
   { id: 'watermelon', name: 'Watermelon', emoji: '🍉', cat: 'fruit', kcal: 30, p: 0.6, c: 8, f: 0.2, unit: 'g', tags: ['fruit'] },
   { id: 'lemon', name: 'Lemon', emoji: '🍋', cat: 'fruit', kcal: 29, p: 1.1, c: 9, f: 0.3, unit: 'g', tags: ['fruit'] },
   { id: 'pomegranate', name: 'Pomegranate', emoji: '🟥', cat: 'fruit', kcal: 83, p: 1.7, c: 19, f: 1.2, unit: 'g', tags: ['fruit','caucasian'] },
@@ -119,7 +119,7 @@ const FOODS = [
   // ===== OILS & FATS =====
   { id: 'olive-oil', name: 'Olive oil', emoji: '🫒', cat: 'fat', kcal: 884, p: 0, c: 0, f: 100, unit: 'ml', tags: ['oil','high-fat'] },
   { id: 'sunflower-oil', name: 'Sunflower oil', emoji: '🌻', cat: 'fat', kcal: 884, p: 0, c: 0, f: 100, unit: 'ml', tags: ['oil','high-fat','russian'] },
-  { id: 'coconut-oil', name: 'Coconut oil', emoji: '🥥', cat: 'fat', kcal: 862, p: 0, c: 0, f: 100, unit: 'ml', tags: ['oil','high-fat','asian'] },
+  { id: 'coconut-oil', name: 'Coconut oil', emoji: '🥥', cat: 'fat', kcal: 862, p: 0, c: 0, f: 100, unit: 'ml', tags: ['oil','high-fat'] },
 
   // ===== PREPARED DISHES — RUSSIAN =====
   { id: 'borscht', name: 'Borscht', emoji: '🍲', cat: 'mixed', kcal: 60, p: 3, c: 7, f: 2.5, unit: 'g', tags: ['russian','soup'] },
@@ -138,17 +138,6 @@ const FOODS = [
   { id: 'kharcho', name: 'Kharcho soup', emoji: '🍲', cat: 'mixed', kcal: 90, p: 6, c: 8, f: 4, unit: 'g', tags: ['caucasian','soup'] },
   { id: 'dolma', name: 'Dolma', emoji: '🌿', cat: 'mixed', kcal: 165, p: 6, c: 13, f: 10, unit: 'g', tags: ['caucasian'] },
   { id: 'chebureki', name: 'Cheburek', emoji: '🥟', cat: 'mixed', kcal: 264, p: 13, c: 29, f: 11, unit: 'g', tags: ['caucasian'] },
-
-  // ===== PREPARED DISHES — ASIAN =====
-  { id: 'sushi-roll', name: 'California roll (8 pcs)', emoji: '🍣', cat: 'mixed', kcal: 255, p: 9, c: 38, f: 7, unit: 'g', tags: ['asian'] },
-  { id: 'pad-thai', name: 'Pad thai', emoji: '🍜', cat: 'mixed', kcal: 200, p: 10, c: 25, f: 7, unit: 'g', tags: ['asian'] },
-  { id: 'ramen', name: 'Ramen (with broth)', emoji: '🍜', cat: 'mixed', kcal: 145, p: 6, c: 18, f: 5, unit: 'g', tags: ['asian','soup'] },
-  { id: 'fried-rice', name: 'Fried rice', emoji: '🍚', cat: 'mixed', kcal: 174, p: 5, c: 27, f: 5, unit: 'g', tags: ['asian'] },
-  { id: 'kung-pao', name: 'Kung pao chicken', emoji: '🍗', cat: 'mixed', kcal: 200, p: 16, c: 8, f: 12, unit: 'g', tags: ['asian'] },
-  { id: 'pho', name: 'Pho beef soup', emoji: '🍜', cat: 'mixed', kcal: 75, p: 6, c: 9, f: 1.5, unit: 'g', tags: ['asian','soup'] },
-  { id: 'bibimbap', name: 'Bibimbap', emoji: '🍲', cat: 'mixed', kcal: 145, p: 7, c: 22, f: 4, unit: 'g', tags: ['asian'] },
-  { id: 'curry-chicken', name: 'Chicken curry', emoji: '🍛', cat: 'mixed', kcal: 165, p: 12, c: 5, f: 11, unit: 'g', tags: ['asian'] },
-  { id: 'spring-roll', name: 'Spring roll (1 pc)', emoji: '🥡', cat: 'mixed', kcal: 130, p: 4, c: 14, f: 7, unit: 'piece', avgGrams: 50, tags: ['asian'] },
 
   // ===== PREPARED DISHES — WESTERN =====
   { id: 'pizza-cheese', name: 'Cheese pizza (1 slice)', emoji: '🍕', cat: 'mixed', kcal: 285, p: 12, c: 36, f: 10, unit: 'g', tags: ['western'] },
@@ -186,7 +175,7 @@ const FOODS = [
   // ===== CONDIMENTS =====
   { id: 'mayo', name: 'Mayonnaise', emoji: '🥫', cat: 'fat', kcal: 680, p: 1, c: 0.6, f: 75, unit: 'g', tags: ['condiment','high-fat'] },
   { id: 'ketchup', name: 'Ketchup', emoji: '🍅', cat: 'sweet', kcal: 101, p: 1.7, c: 24, f: 0.4, unit: 'g', tags: ['condiment'] },
-  { id: 'soy-sauce', name: 'Soy sauce', emoji: '🍶', cat: 'mixed', kcal: 53, p: 8, c: 5, f: 0.6, unit: 'ml', tags: ['condiment','asian'] }
+  { id: 'soy-sauce', name: 'Soy sauce', emoji: '🍶', cat: 'mixed', kcal: 53, p: 8, c: 5, f: 0.6, unit: 'ml', tags: ['condiment'] }
 ];
 
 // Lookup helper
