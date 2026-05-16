@@ -197,7 +197,10 @@ const FOOD_CATEGORIES = [
 // Compute calories/macros for a given amount of food
 // amount: grams or ml; for "piece" units, amount is # of pieces
 function computeMacros(foodId, amount) {
-  const food = FOOD_BY_ID[foodId];
+  let food = FOOD_BY_ID[foodId];
+  if (!food && typeof STATE !== 'undefined' && STATE.customFoods) {
+    food = STATE.customFoods.find(f => f.id === foodId);
+  }
   if (!food) return { kcal: 0, p: 0, c: 0, f: 0 };
 
   let factor;
@@ -231,7 +234,8 @@ function defaultAmount(food) {
 // Search foods by query
 function searchFoods(query, category = 'all') {
   const q = query.trim().toLowerCase();
-  let results = FOODS;
+  const custom = (typeof STATE !== 'undefined' && Array.isArray(STATE.customFoods)) ? STATE.customFoods : [];
+  let results = custom.concat(FOODS);
   if (category !== 'all') {
     results = results.filter(f => f.cat === category);
   }
@@ -247,6 +251,8 @@ function searchFoods(query, category = 'all') {
     else if (name.includes(' ' + q)) score = 60;
     else if (name.includes(q)) score = 40;
     else if (f.tags?.some(t => t.includes(q))) score = 20;
+    // Slight boost so user's own foods surface above near-equal catalog hits
+    if (score > 0 && f.custom) score += 5;
     return { food: f, score };
   });
   return scored.filter(s => s.score > 0)

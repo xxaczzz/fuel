@@ -1,6 +1,6 @@
 {
   "name": "fuel-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "FUEL — Smart Nutrition Journal. Photo-based food tracking, smart meal plans, and self-adjusting calorie targets.",
   "private": true,
   "scripts": {

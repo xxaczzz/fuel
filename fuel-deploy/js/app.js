@@ -8,6 +8,7 @@
 const STATE = {
   profile: null,         // { sex, age, height, startWeight, goal, activity, apiKey, ... }
   log: {},               // { 'YYYY-MM-DD': { meals: [...], weight: 0, steps: 0, trained: false, notes: '' } }
+  customFoods: [],       // user-saved foods: same shape as FOODS, macros per 100g, id prefixed 'custom-'
   view: 'today',
   currentDate: todayKey(),
   lastBackup: 0,
@@ -35,6 +36,7 @@ function save() {
     localStorage.setItem('fuel-data', JSON.stringify({
       profile: STATE.profile,
       log: STATE.log,
+      customFoods: STATE.customFoods,
       lastBackup: STATE.lastBackup,
       lastCalibration: STATE.lastCalibration,
       customTarget: STATE.customTarget
@@ -54,6 +56,7 @@ function load() {
       const d = JSON.parse(raw);
       STATE.profile = d.profile || null;
       STATE.log = d.log || {};
+      STATE.customFoods = Array.isArray(d.customFoods) ? d.customFoods : [];
       STATE.lastBackup = d.lastBackup || 0;
       STATE.lastCalibration = d.lastCalibration || 0;
       STATE.customTarget = d.customTarget || null;
@@ -115,6 +118,15 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
+}
+
+// ---- Custom foods: resolve catalog + user-saved foods uniformly ----
+function allFoods() {
+  return FOODS.concat(STATE.customFoods || []);
+}
+function foodById(id) {
+  if (FOOD_BY_ID[id]) return FOOD_BY_ID[id];
+  return (STATE.customFoods || []).find(f => f.id === id) || null;
 }
 
 function fmtDate(key) {
@@ -766,7 +778,7 @@ function renderFoodResults() {
     <div class="food-result" onclick="pickFood('${f.id}')">
       <div class="meal-thumb" style="background:var(--bg-elev-2);">${f.emoji}</div>
       <div class="food-result-info">
-        <div class="food-result-name">${f.name}</div>
+        <div class="food-result-name">${f.name}${f.custom ? ' <span class="recipe-tag" style="font-size:9px;vertical-align:middle;">MINE</span>' : ''}</div>
         <div class="food-result-meta">
           per ${f.unit === 'piece' ? '1 pc' : '100' + f.unit} ·
           P ${f.p}g · C ${f.c}g · F ${f.f}g
@@ -788,7 +800,7 @@ function setCategory(catId) {
 }
 
 function pickFood(foodId) {
-  const food = FOOD_BY_ID[foodId];
+  const food = foodById(foodId);
   if (!food) return;
   addFoodState.pendingFood = food;
   addFoodState.pendingAmount = defaultAmount(food);
@@ -939,14 +951,14 @@ function reEditMeal(idx) {
   const meal = STATE.log[STATE.currentDate].meals[idx];
   if (!meal) return;
   // If we have a foodId, open the quantity confirm with prefilled values
-  if (meal.foodId && FOOD_BY_ID[meal.foodId]) {
+  if (meal.foodId && foodById(meal.foodId)) {
     addFoodState = {
       mealType: meal.type,
       query: '',
       category: 'all',
       photoBase64: null,
       photoLoading: false,
-      pendingFood: FOOD_BY_ID[meal.foodId],
+      pendingFood: foodById(meal.foodId),
       pendingAmount: meal.amount,
       editingIdx: idx
     };
@@ -1176,7 +1188,16 @@ function renderRecognitionUI() {
   const r = recognitionState.base;
   const answers = recognitionState.answers;
 
-  // Compute adjusted kcal
+  const baseGrams = r.estimatedGrams || 0;
+  if (recognitionState.grams === undefined || recognitionState.grams === null) {
+    recognitionState.grams = baseGrams || 100;
+  }
+  const grams = Math.max(1, Math.round(recognitionState.grams));
+  // AI estimate is the default: when grams === estimatedGrams, wScale = 1
+  const wScale = baseGrams > 0 ? grams / baseGrams : 1;
+  const edited = baseGrams > 0 && grams !== baseGrams;
+
+  // Clarifying-question kcal delta (absolute for the estimated portion), scaled with weight
   let kcalDelta = 0;
   for (const q of r.clarifyingQuestions || []) {
     const sel = answers[q.id];
@@ -1184,12 +1205,12 @@ function renderRecognitionUI() {
       kcalDelta += q.options[sel].kcal_delta || 0;
     }
   }
-  const totalKcal = (r.kcal || 0) + kcalDelta;
-  // Scale macros proportionally with kcal delta (rough but good enough)
-  const scale = totalKcal / (r.kcal || 1);
-  const totalP = Math.round((r.protein_g || 0) * 1); // protein doesn't scale with cooking method
-  const totalF = Math.round((r.fat_g || 0) + kcalDelta / 9 * 0.85); // most kcal_delta comes from fat
-  const totalC = Math.round((r.carbs_g || 0) * 1);
+  const scaledDelta = Math.round(kcalDelta * wScale);
+
+  const totalKcal = Math.round((r.kcal || 0) * wScale) + scaledDelta;
+  const totalP = Math.round((r.protein_g || 0) * wScale);
+  const totalC = Math.round((r.carbs_g || 0) * wScale);
+  const totalF = Math.round((r.fat_g || 0) * wScale + scaledDelta / 9 * 0.85);
 
   openModal(`
     <div style="position:relative;">
@@ -1203,7 +1224,16 @@ function renderRecognitionUI() {
         <h2 class="modal-title" style="margin:0;font-size:20px;">${escapeHtml(r.name || 'Unknown food')}</h2>
         ${r.confidence ? `<span class="recipe-tag">${r.confidence}</span>` : ''}
       </div>
-      <div class="eyebrow" style="margin-bottom:16px;">~${r.estimatedGrams || 0}g · ${totalKcal} kcal</div>
+      <div class="eyebrow" style="margin-bottom:12px;">${edited ? `AI est. ~${baseGrams}g · adjusted` : 'AI estimate'}</div>
+
+      <label>Weight (g)</label>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">
+        <button class="btn btn-secondary" style="width:48px;flex-shrink:0;" onclick="bumpRecogGrams(-10)" aria-label="Less">−</button>
+        <input type="number" id="recog-grams" value="${grams}" min="1" inputmode="numeric"
+               style="text-align:center;font-family:var(--font-mono);font-size:18px;font-weight:600;"
+               onchange="setRecogGrams(this.value)">
+        <button class="btn btn-secondary" style="width:48px;flex-shrink:0;" onclick="bumpRecogGrams(10)" aria-label="More">+</button>
+      </div>
 
       ${(r.clarifyingQuestions || []).map((q, qi) => `
         <div style="margin-bottom:18px;">
@@ -1238,6 +1268,18 @@ function renderRecognitionUI() {
   `);
 }
 
+function setRecogGrams(v) {
+  const n = parseFloat(v);
+  recognitionState.grams = (!isFinite(n) || n < 1) ? 1 : Math.round(n);
+  renderRecognitionUI();
+}
+
+function bumpRecogGrams(delta) {
+  const cur = Math.round(recognitionState.grams || 0);
+  recognitionState.grams = Math.max(1, cur + delta);
+  renderRecognitionUI();
+}
+
 function answerQuestion(qid, optIdx) {
   recognitionState.answers[qid] = optIdx;
   renderRecognitionUI();
@@ -1251,7 +1293,7 @@ function confirmRecognized(kcal, p, c, f) {
     emoji: null,
     photo: addFoodState.photoBase64,
     type: addFoodState.mealType,
-    amount: r.estimatedGrams || 0,
+    amount: Math.round(recognitionState.grams || r.estimatedGrams || 0),
     unit: 'g',
     kcal,
     p, c, f,
@@ -1305,6 +1347,20 @@ function openManualEntry(prefill, editIdx) {
         <input type="number" id="me-f" placeholder="0" value="${prefill.f || ''}" min="0" step="0.1">
       </div>
 
+      ${isEdit ? '' : `
+      <div id="save-food-toggle" class="toggle-card" onclick="toggleSaveFood()" style="margin-bottom:12px;">
+        <div class="toggle-icon">★</div>
+        <div class="toggle-info">
+          <div class="toggle-title">Save to my foods</div>
+          <div class="toggle-sub">REUSE IT FROM SEARCH LATER</div>
+        </div>
+      </div>
+      <div id="save-food-weight-wrap" style="display:none;margin-bottom:16px;">
+        <label>Portion weight (g) — the macros above are for this weight</label>
+        <input type="number" id="me-weight" placeholder="100" value="100" min="1">
+      </div>
+      `}
+
       <button class="btn btn-primary btn-block btn-lg" onclick="confirmManual(${editIdx === undefined ? 'null' : editIdx}, ${prefill.photo ? "'" + prefill.photo + "'" : 'null'})">${isEdit ? 'Save' : 'Add'}</button>
     </div>
   `);
@@ -1349,10 +1405,49 @@ function confirmManual(editIdx, photoData) {
     STATE.log[STATE.currentDate].meals.push(meal);
   }
 
+  // Save to my foods (only on new manual entries)
+  let savedToFoods = false;
+  const toggle = document.getElementById('save-food-toggle');
+  if (toggle && toggle.classList.contains('on')) {
+    const wEl = document.getElementById('me-weight');
+    const w = Math.max(1, parseFloat(wEl && wEl.value) || 100);
+    const per = x => Math.round((x / w) * 100 * 10) / 10;
+    const food = {
+      id: 'custom-' + Date.now().toString(36),
+      name,
+      emoji: '⭐',
+      cat: 'mixed',
+      kcal: Math.round((kcal / w) * 100),
+      p: per(p), c: per(c), f: per(f),
+      unit: 'g',
+      custom: true,
+      tags: ['my-food']
+    };
+    if (!Array.isArray(STATE.customFoods)) STATE.customFoods = [];
+    const dupIdx = STATE.customFoods.findIndex(
+      cf => cf.name.trim().toLowerCase() === name.toLowerCase()
+    );
+    if (dupIdx >= 0) {
+      food.id = STATE.customFoods[dupIdx].id;
+      STATE.customFoods[dupIdx] = food;
+    } else {
+      STATE.customFoods.push(food);
+    }
+    savedToFoods = true;
+  }
+
   save();
   closeModal();
   renderApp();
-  toast(editIdx !== null ? 'Updated' : `Added ${kcal} kcal`);
+  toast(editIdx !== null ? 'Updated' : (savedToFoods ? `Added · saved to my foods` : `Added ${kcal} kcal`));
+}
+
+function toggleSaveFood() {
+  const card = document.getElementById('save-food-toggle');
+  if (!card) return;
+  const on = card.classList.toggle('on');
+  const wrap = document.getElementById('save-food-weight-wrap');
+  if (wrap) wrap.style.display = on ? '' : 'none';
 }
 
 // ============== QUICK ENTRY: WEIGHT, STEPS, TRAINING ==============
@@ -1718,7 +1813,7 @@ function renderRecipeCard(recipe, emoji, mealLabel, mealKey) {
         <div class="recipe-card-body">
           <div class="eyebrow" style="margin-bottom:8px;">Ingredients</div>
           ${recipe.ingredients.map(ing => {
-            const food = FOOD_BY_ID[ing.foodId];
+            const food = foodById(ing.foodId);
             const unit = food?.unit === 'piece' ? (ing.amount === 1 ? ' pc' : ' pcs') : food?.unit || 'g';
             return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>${food?.emoji || ''} ${food?.name || ing.foodId}</span><span class="mono" style="color:var(--text-dim);">${ing.amount}${unit}</span></div>`;
           }).join('')}
@@ -2208,7 +2303,7 @@ async function renderShareCard(date) {
   ctx.font = '500 22px "JetBrains Mono", monospace';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  ctx.fillText('fuel-ey3.pages.dev', W - 80, H - 60);
+  ctx.fillText('FUEL — 100% FREE FOREVER', W - 80, H - 60);
 
   // Convert canvas to blob
   return new Promise((resolve, reject) => {
@@ -2479,6 +2574,26 @@ function openSettings() {
       </div>
       <button class="btn btn-secondary btn-sm btn-block" style="margin-top:8px;" onclick="openCustomTarget()">Set custom target</button>
 
+      <div class="eyebrow" style="margin:24px 0 8px;">My foods</div>
+      ${(STATE.customFoods && STATE.customFoods.length)
+        ? STATE.customFoods.map((cf, i) => `
+          <div class="food-result" style="cursor:default;">
+            <div class="meal-thumb" style="background:var(--bg-elev-2);">${cf.emoji || '⭐'}</div>
+            <div class="food-result-info">
+              <div class="food-result-name">${escapeHtml(cf.name)}</div>
+              <div class="food-result-meta">per 100g · ${cf.kcal} kcal · P ${cf.p} · C ${cf.c} · F ${cf.f}</div>
+            </div>
+            <button class="btn-icon" onclick="editCustomFood(${i})" aria-label="Edit">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn-icon" onclick="deleteCustomFood(${i})" aria-label="Delete" style="color:var(--danger);">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            </button>
+          </div>
+        `).join('')
+        : `<p style="color:var(--text-dim);font-size:12px;line-height:1.5;">No saved foods yet. When you add a meal manually, flip <strong>Save to my foods</strong> to reuse it from search.</p>`
+      }
+
       <div class="eyebrow" style="margin:24px 0 8px;">Data</div>
       <button class="btn btn-secondary btn-block btn-sm" onclick="exportData()" style="margin-bottom:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
@@ -2499,9 +2614,85 @@ function openSettings() {
         Reset all data
       </button>
 
-      <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;">FUEL · v1.0</div>
+      <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;">FUEL · v1.0.1</div>
     </div>
   `);
+}
+
+function editCustomFood(idx) {
+  const cf = (STATE.customFoods || [])[idx];
+  if (!cf) return;
+  openModal(`
+    <div style="position:relative;">
+      <button class="modal-close-btn" onclick="openSettings()" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <h2 class="modal-title">Edit food</h2>
+      <p style="color:var(--text-dim);font-size:12px;margin-bottom:16px;line-height:1.5;">Values are per 100 g — they scale to any portion when you add this food.</p>
+
+      <label>Name</label>
+      <input type="text" id="cf-name" value="${escapeHtml(cf.name)}" style="text-align:left;font-size:15px;font-weight:500;font-family:var(--font-body);">
+
+      <label style="margin-top:16px;">Calories (kcal / 100g)</label>
+      <input type="number" id="cf-kcal" value="${cf.kcal}" min="0">
+
+      <div class="qty-row" style="margin-top:16px;">
+        <div class="qty-input-group">
+          <label>Protein g</label>
+          <input type="number" id="cf-p" value="${cf.p}" min="0" step="0.1">
+        </div>
+        <div class="qty-input-group">
+          <label>Carbs g</label>
+          <input type="number" id="cf-c" value="${cf.c}" min="0" step="0.1">
+        </div>
+      </div>
+      <div class="qty-input-group" style="margin:16px 0;">
+        <label>Fat g</label>
+        <input type="number" id="cf-f" value="${cf.f}" min="0" step="0.1">
+      </div>
+
+      <button class="btn btn-primary btn-block btn-lg" onclick="saveCustomFood(${idx})">Save</button>
+    </div>
+  `);
+}
+
+function saveCustomFood(idx) {
+  const cf = (STATE.customFoods || [])[idx];
+  if (!cf) return;
+  const name = document.getElementById('cf-name').value.trim();
+  const kcal = parseFloat(document.getElementById('cf-kcal').value) || 0;
+  if (!name) { toast('Enter a name', 'danger'); return; }
+  if (kcal <= 0) { toast('Enter calories', 'danger'); return; }
+  cf.name = name;
+  cf.kcal = Math.round(kcal);
+  cf.p = parseFloat(document.getElementById('cf-p').value) || 0;
+  cf.c = parseFloat(document.getElementById('cf-c').value) || 0;
+  cf.f = parseFloat(document.getElementById('cf-f').value) || 0;
+  save();
+  toast('Saved');
+  openSettings();
+}
+
+function deleteCustomFood(idx) {
+  const cf = (STATE.customFoods || [])[idx];
+  if (!cf) return;
+  openModal(`
+    <div style="position:relative;">
+      <h2 class="modal-title">Delete food?</h2>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;line-height:1.5;">Remove <strong>${escapeHtml(cf.name)}</strong> from your foods? Meals you already logged with it stay unchanged.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn btn-secondary" onclick="openSettings()">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmDeleteCustomFood(${idx})">Delete</button>
+      </div>
+    </div>
+  `);
+}
+
+function confirmDeleteCustomFood(idx) {
+  if (Array.isArray(STATE.customFoods)) STATE.customFoods.splice(idx, 1);
+  save();
+  toast('Deleted');
+  openSettings();
 }
 
 function saveApiKey() {
@@ -2586,6 +2777,7 @@ function exportData() {
     exportedAt: new Date().toISOString(),
     profile: STATE.profile,
     log: STATE.log,
+    customFoods: STATE.customFoods || [],
     customTarget: STATE.customTarget
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -2619,6 +2811,7 @@ function importData() {
 
         STATE.profile = data.profile;
         STATE.log = data.log;
+        STATE.customFoods = Array.isArray(data.customFoods) ? data.customFoods : (STATE.customFoods || []);
         STATE.customTarget = data.customTarget || null;
         save();
         closeModal();
