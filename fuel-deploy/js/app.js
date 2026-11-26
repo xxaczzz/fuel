@@ -1014,7 +1014,7 @@ function capturePhoto() {
         renderPhotoPreview();
 
         if (STATE.profile.apiKey) {
-          recognizePhoto(base64);
+          renderPhotoDescribe();
         } else {
           renderPhotoNoKey();
         }
@@ -1044,6 +1044,34 @@ function renderPhotoPreview() {
   `);
 }
 
+// Optional one-line description before sending the photo to Vision
+function renderPhotoDescribe() {
+  openModal(`
+    <div style="position:relative;">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <h2 class="modal-title">Add photo</h2>
+      <div class="photo-preview" style="aspect-ratio:1.5/1;">
+        <img src="${addFoodState.photoBase64}" alt="Captured food">
+      </div>
+      <label>Описание (опционально)</label>
+      <input type="text" id="photo-desc" maxlength="200" autocomplete="off"
+             placeholder="e.g. эклер с заварным кремом 50 г / харчо с говядиной"
+             style="text-align:left;font-size:15px;font-weight:500;font-family:var(--font-body);"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();submitPhotoDescribe();}">
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px;" onclick="submitPhotoDescribe()">Analyze</button>
+    </div>
+  `);
+}
+
+function submitPhotoDescribe() {
+  const el = document.getElementById('photo-desc');
+  const desc = el ? el.value.trim() : '';
+  renderPhotoPreview();
+  recognizePhoto(addFoodState.photoBase64, desc);
+}
+
 function renderPhotoNoKey() {
   openModal(`
     <div style="position:relative;">
@@ -1065,7 +1093,7 @@ function renderPhotoNoKey() {
   `);
 }
 
-async function recognizePhoto(base64) {
+async function recognizePhoto(base64, description) {
   const apiKey = STATE.profile.apiKey;
   const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
 
@@ -1099,6 +1127,21 @@ Rules:
 - kcal_delta is added to base kcal if user picks that option (0 for the assumed default)
 - If image is not food, return: {"error": "not_food"}`;
 
+  const desc = (description || '').trim();
+  const descRules = `
+
+User description rules:
+- The user added a short description of this photo (in the next text block). It may contain the dish name, ingredients, cooking method and/or the weight in grams.
+- Use the description to identify the dish and adjust ingredients and cooking method. The photo still matters for anything the description does not cover.
+- If the description states a weight (a number next to "г", "гр", "g", "gr" or "grams", e.g. "50 г", "300g"), set estimatedGrams to exactly that number and calculate kcal/protein/carbs/fat for that weight. Do not estimate the weight visually in that case and do not ask about portion size.
+- If no weight is stated, estimate the weight from the photo as usual.`;
+
+  const content = [
+    { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Data } },
+    { type: 'text', text: desc ? prompt + descRules : prompt }
+  ];
+  if (desc) content.push({ type: 'text', text: `User description: ${desc}` });
+
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -1113,10 +1156,7 @@ Rules:
         max_tokens: 1024,
         messages: [{
           role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Data } },
-            { type: 'text', text: prompt }
-          ]
+          content
         }]
       })
     });
@@ -2614,7 +2654,7 @@ function openSettings() {
         Reset all data
       </button>
 
-      <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;">FUEL · v1.0.1</div>
+      <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;">FUEL · v1.0.2</div>
     </div>
   `);
 }
