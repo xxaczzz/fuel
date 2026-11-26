@@ -12,6 +12,7 @@ Companion app to [FORGE](https://github.com/your-forge-repo) (workout tracker). 
 - **Meal plan generator**: Filter by cuisine (Russian / Caucasian / Universal), max time, difficulty, and budget. Get a full day of recipes within 10% of your target.
 - **130+ foods database**: Curated catalog with macros, including Russian (borscht, pelmeni, syrniki...), Caucasian (khachapuri, khinkali, satsivi...), plus universal staples.
 - **30+ recipes**: Step-by-step instructions, scaled per serving.
+- **English / Russian**: Full UI, food database and recipes in both languages. Switch in Settings; first launch follows the device language. Search finds foods by either name.
 - **Offline-first PWA**: Works without internet (except photo recognition). Install to home screen on iOS/Android.
 - **Privacy**: All data lives in your browser. No accounts, no servers. Photos are sent directly from your device to api.anthropic.com — never via any third party.
 
@@ -73,8 +74,9 @@ Or via the Cloudflare dashboard: connect your Git repo, set the build output dir
 ├── _redirects              # SPA fallback
 ├── css/styles.css          # Full design system (~900 lines)
 ├── js/
-│   ├── foods.js            # 150+ food catalog with macros
-│   ├── recipes.js          # 30+ recipes for meal plan generator
+│   ├── i18n.js             # EN/RU dictionaries, t(), plurals, language setting
+│   ├── foods.js            # Food catalog with macros (name_en / name_ru)
+│   ├── recipes.js          # Bilingual recipes for meal plan generator
 │   └── app.js              # All app logic — state, screens, AI, math
 └── assets/
     ├── icons/              # PWA icons (192, 512, maskable, favicon)

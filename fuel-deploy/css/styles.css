@@ -381,8 +381,10 @@ textarea { font-family: var(--font-body); font-size: 15px; min-height: 80px; res
 
 .macro-bar-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
+  gap: 2px 6px;
   margin-bottom: 8px;
 }
 
@@ -421,6 +423,11 @@ textarea { font-family: var(--font-body); font-size: 15px; min-height: 80px; res
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text-dim);
+}
+
+/* Russian macro labels are longer: tighter tracking keeps label + target on one line */
+html[lang="ru"] .macro-bar-label {
+  letter-spacing: 0.04em;
 }
 
 /* ============== MEAL CARDS ============== */

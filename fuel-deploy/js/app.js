@@ -44,7 +44,7 @@ function save() {
   } catch(e) {
     console.error(e);
     if (e.name === 'QuotaExceededError') {
-      toast('Storage is full. Make a backup and clear old logs.', 'danger');
+      toast(t('toast.storageFull'), 'danger');
     }
   }
 }
@@ -131,7 +131,30 @@ function foodById(id) {
 
 function fmtDate(key) {
   const d = new Date(key);
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(locale(), { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// Stored unit codes stay language-neutral ('g', 'ml', 'pc', 'serv'); only display is translated
+function unitLabel(code) {
+  if (code === 'piece') code = 'pc';
+  const k = 'unit.' + code;
+  return hasKey(k) ? t(k) : code;
+}
+
+// Display name of a logged meal in the current language.
+// Catalog foods and recipes resolve live; photo/manual entries keep what was stored.
+function mealName(meal) {
+  if (meal.foodId) {
+    const f = foodById(meal.foodId);
+    if (f) return foodName(f);
+  }
+  const r = (meal.recipeId && RECIPES.find(x => x.id === meal.recipeId)) || RECIPE_BY_NAME_EN[meal.name];
+  if (r) return recipeName(r);
+  return meal.name;
+}
+
+function mealTypeLabel(type) {
+  return t('meal.' + (type || 'snack'));
 }
 
 // ============== NUTRITION MATH ==============
@@ -283,7 +306,7 @@ function maybeRecalibrate() {
     save();
 
     setTimeout(() => {
-      toast(`Daily target adjusted: ${nudge > 0 ? '+' : ''}${nudge} kcal`);
+      toast(t('toast.targetAdjusted', { n: (nudge > 0 ? '+' : '') + nudge }));
     }, 800);
   } else {
     STATE.lastCalibration = now;
@@ -305,28 +328,28 @@ let onboardData = {
 function onboardSteps() {
   return [
     { type: 'welcome' },
-    { type: 'choice', field: 'sex', title: 'Are you...', sub: 'We use this to calculate your metabolic rate.',
+    { type: 'choice', field: 'sex', title: t('onb.sex.title'), sub: t('onb.sex.sub'),
       options: [
-        { id: 'male', label: 'Male', icon: '♂' },
-        { id: 'female', label: 'Female', icon: '♀' }
+        { id: 'male', label: t('onb.sex.male'), icon: '♂' },
+        { id: 'female', label: t('onb.sex.female'), icon: '♀' }
       ]
     },
-    { type: 'number', field: 'age', title: 'How old are you?', sub: 'In years.', placeholder: '25', min: 14, max: 100 },
-    { type: 'number', field: 'height', title: 'Your height?', sub: 'In centimeters.', placeholder: '175', min: 120, max: 230 },
-    { type: 'number', field: 'weight', title: 'Your weight?', sub: 'In kilograms. Be honest — this is for the math.', placeholder: '75', min: 35, max: 250, step: 0.1 },
-    { type: 'choice', field: 'goal', title: 'What\'s the goal?', sub: 'You can change this any time.',
+    { type: 'number', field: 'age', title: t('onb.age.title'), sub: t('onb.age.sub'), placeholder: '25', min: 14, max: 100 },
+    { type: 'number', field: 'height', title: t('onb.height.title'), sub: t('onb.height.sub'), placeholder: '175', min: 120, max: 230 },
+    { type: 'number', field: 'weight', title: t('onb.weight.title'), sub: t('onb.weight.sub'), placeholder: '75', min: 35, max: 250, step: 0.1 },
+    { type: 'choice', field: 'goal', title: t('onb.goal.title'), sub: t('onb.goal.sub'),
       options: [
-        { id: 'cut', label: 'Lose fat', desc: '~0.5 kg per week — 20% calorie deficit', icon: '🔥' },
-        { id: 'maintain', label: 'Maintain', desc: 'Keep current weight, fuel your training', icon: '⚖️' },
-        { id: 'bulk', label: 'Build muscle', desc: '~0.3 kg per week — 10% surplus', icon: '💪' }
+        { id: 'cut', label: t('goal.cut'), desc: t('onb.goal.cutDesc'), icon: '🔥' },
+        { id: 'maintain', label: t('goal.maintain'), desc: t('onb.goal.maintainDesc'), icon: '⚖️' },
+        { id: 'bulk', label: t('goal.bulk'), desc: t('onb.goal.bulkDesc'), icon: '💪' }
       ]
     },
-    { type: 'choice', field: 'activity', title: 'How active are you?', sub: 'Outside of structured workouts.',
+    { type: 'choice', field: 'activity', title: t('onb.act.title'), sub: t('onb.act.sub'),
       options: [
-        { id: 'sedentary', label: 'Sedentary', desc: 'Office work, mostly sitting', icon: '🪑' },
-        { id: 'light', label: 'Light', desc: '1-3 workouts/week, some walking', icon: '🚶' },
-        { id: 'moderate', label: 'Moderate', desc: '3-5 workouts/week, on your feet often', icon: '🏃' },
-        { id: 'active', label: 'Very active', desc: '6-7 workouts/week, physical job', icon: '⚡' }
+        { id: 'sedentary', label: t('activity.sedentary'), desc: t('onb.act.sedentaryDesc'), icon: '🪑' },
+        { id: 'light', label: t('activity.light'), desc: t('onb.act.lightDesc'), icon: '🚶' },
+        { id: 'moderate', label: t('activity.moderate'), desc: t('onb.act.moderateDesc'), icon: '🏃' },
+        { id: 'active', label: t('onb.act.active'), desc: t('onb.act.activeDesc'), icon: '⚡' }
       ]
     },
     { type: 'finish' }
@@ -345,12 +368,12 @@ function renderOnboarding() {
       <div class="onboard">
         <div class="onboard-step" style="text-align:center;">
           <h1 class="onboard-title" style="font-size:96px;letter-spacing:-0.04em;line-height:1;margin-bottom:8px;">FUEL</h1>
-          <p class="eyebrow" style="margin-bottom:32px;">Smart Nutrition Journal</p>
+          <p class="eyebrow" style="margin-bottom:32px;">${t('app.tagline')}</p>
           <p class="onboard-sub" style="text-align:left;">
-            Track your calories with photos, get meal plans tailored to your budget and time, and watch your daily target self-adjust as you progress.
+            ${t('onb.welcome')}
           </p>
           <button class="btn btn-primary btn-block btn-lg" onclick="onboardData.step=1;renderOnboarding()">
-            Get started
+            ${t('onb.start')}
           </button>
         </div>
       </div>
@@ -400,15 +423,15 @@ function renderOnboarding() {
     <div class="onboard">
       <div class="progress-bar"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
       <div class="onboard-step">
-        <div class="eyebrow" style="margin-bottom:8px;">Step ${onboardData.step} of ${totalSteps}</div>
+        <div class="eyebrow" style="margin-bottom:8px;">${t('onb.step', { n: onboardData.step, total: totalSteps })}</div>
         <h1 class="onboard-title">${step.title}</h1>
         <p class="onboard-sub">${step.sub}</p>
         ${inner}
       </div>
       <div style="display:flex;gap:10px;margin-top:24px;">
-        <button class="btn btn-ghost" onclick="onboardData.step--;renderOnboarding()">Back</button>
+        <button class="btn btn-ghost" onclick="onboardData.step--;renderOnboarding()">${t('common.back')}</button>
         <button class="btn btn-primary" style="flex:1;" onclick="tryAdvanceOnboard()">
-          Continue
+          ${t('common.continue')}
         </button>
       </div>
     </div>
@@ -446,21 +469,21 @@ function tryAdvanceOnboard() {
     const raw = inp ? inp.value : '';
     const num = raw ? parseFloat(raw) : NaN;
     if (isNaN(num)) {
-      toast('Please enter a number', 'danger');
+      toast(t('toast.enterNumber'), 'danger');
       return;
     }
     if (step.min !== undefined && num < step.min) {
-      toast(`Minimum is ${step.min}`, 'danger');
+      toast(t('toast.min', { n: step.min }), 'danger');
       return;
     }
     if (step.max !== undefined && num > step.max) {
-      toast(`Maximum is ${step.max}`, 'danger');
+      toast(t('toast.max', { n: step.max }), 'danger');
       return;
     }
     onboardData[step.field] = num;
   } else if (step.type === 'choice') {
     if (!onboardData[step.field]) {
-      toast('Please pick an option', 'danger');
+      toast(t('toast.pickOption'), 'danger');
       return;
     }
   }
@@ -492,7 +515,7 @@ function finishOnboarding() {
 
   STATE.view = 'today';
   renderApp();
-  toast('Welcome to FUEL!');
+  toast(t('toast.welcome'));
 }
 
 // ============== SCREEN: TODAY ==============
@@ -516,13 +539,12 @@ function renderToday() {
   });
 
   const mealEmoji = { breakfast: '☀️', lunch: '🍽️', dinner: '🌙', snack: '🥨' };
-  const mealLabel = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks' };
 
   render(`
     <div class="screen">
       <div class="header">
         <div class="logo">FUEL</div>
-        <button class="btn-icon" onclick="openSettings()" aria-label="Settings">
+        <button class="btn-icon" onclick="openSettings()" aria-label="${t('settings.title')}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
@@ -536,7 +558,7 @@ function renderToday() {
 
       ${renderMacroBars(totals, target)}
 
-      ${day.trained ? `<div class="notice notice-success">💪 Training day — +${target.kcal - calcMacroTargets(STATE.profile).kcal} kcal granted</div>` : ''}
+      ${day.trained ? `<div class="notice notice-success">💪 ${t('today.trainingBonus', { n: target.kcal - calcMacroTargets(STATE.profile).kcal })}</div>` : ''}
 
       ${['breakfast','lunch','dinner','snack'].map(type => {
         const items = mealGroups[type];
@@ -544,13 +566,13 @@ function renderToday() {
         return `
           <div class="meal-section">
             <div class="meal-section-head">
-              <div class="meal-section-title">${mealEmoji[type]} ${mealLabel[type]}</div>
-              <div class="meal-section-cals">${groupKcal > 0 ? groupKcal + ' kcal' : ''}</div>
+              <div class="meal-section-title">${mealEmoji[type]} ${t('mealGroup.' + type)}</div>
+              <div class="meal-section-cals">${groupKcal > 0 ? groupKcal + ' ' + t('unit.kcal') : ''}</div>
             </div>
             ${items.map((m, i) => renderMealItem(m, day.meals.indexOf(m))).join('')}
             <button class="add-meal-btn" onclick="openAddFood('${type}')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              Add food
+              ${t('today.addFood')}
             </button>
           </div>
         `;
@@ -565,14 +587,14 @@ function renderDateNav(date) {
   const isToday = date === todayKey();
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;padding:8px;">
-      <button class="btn-icon" style="background:transparent;border:none;" onclick="changeDate(-1)" aria-label="Previous day">
+      <button class="btn-icon" style="background:transparent;border:none;" onclick="changeDate(-1)" aria-label="${t('today.prevDay')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
       <div style="text-align:center;">
-        <div style="font-family:var(--font-display);font-size:14px;letter-spacing:0.02em;">${isToday ? 'Today' : fmtDate(date)}</div>
-        ${!isToday ? `<button onclick="goToToday()" style="background:none;border:none;color:var(--accent);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer;text-transform:uppercase;margin-top:2px;">Jump to today</button>` : `<div class="eyebrow" style="margin-top:2px;">${fmtDate(date)}</div>`}
+        <div style="font-family:var(--font-display);font-size:14px;letter-spacing:0.02em;">${isToday ? t('common.today') : fmtDate(date)}</div>
+        ${!isToday ? `<button onclick="goToToday()" style="background:none;border:none;color:var(--accent);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;cursor:pointer;text-transform:uppercase;margin-top:2px;">${t('today.jumpToday')}</button>` : `<div class="eyebrow" style="margin-top:2px;">${fmtDate(date)}</div>`}
       </div>
-      <button class="btn-icon" style="background:transparent;border:none;${date >= todayKey() ? 'opacity:0.3;pointer-events:none;' : ''}" onclick="changeDate(1)" aria-label="Next day">
+      <button class="btn-icon" style="background:transparent;border:none;${date >= todayKey() ? 'opacity:0.3;pointer-events:none;' : ''}" onclick="changeDate(1)" aria-label="${t('today.nextDay')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
       </button>
     </div>
@@ -609,8 +631,8 @@ function renderCalorieRing(consumed, target, extraClass) {
         </svg>
         <div class="macro-ring-center">
           <div class="macro-ring-value">${consumed}</div>
-          <div class="macro-ring-target">/ ${target} kcal</div>
-          <div class="macro-ring-label">${remaining > 0 ? remaining + ' left' : Math.abs(remaining) + ' over'}</div>
+          <div class="macro-ring-target">/ ${target} ${t('unit.kcal')}</div>
+          <div class="macro-ring-label">${remaining > 0 ? t('today.left', { n: remaining }) : t('today.over', { n: Math.abs(remaining) })}</div>
         </div>
       </div>
     </div>
@@ -619,9 +641,9 @@ function renderCalorieRing(consumed, target, extraClass) {
 
 function renderMacroBars(totals, target) {
   const macros = [
-    { key: 'p', label: 'Protein', cls: 'protein' },
-    { key: 'c', label: 'Carbs', cls: 'carbs' },
-    { key: 'f', label: 'Fat', cls: 'fat' }
+    { key: 'p', label: t('macro.protein'), cls: 'protein' },
+    { key: 'c', label: t('macro.carbs'), cls: 'carbs' },
+    { key: 'f', label: t('macro.fat'), cls: 'fat' }
   ];
   return `
     <div class="macro-bars">
@@ -632,9 +654,9 @@ function renderMacroBars(totals, target) {
           <div class="macro-bar">
             <div class="macro-bar-head">
               <div class="macro-bar-label">${m.label}</div>
-              <div class="macro-bar-target">${target[m.key]}g</div>
+              <div class="macro-bar-target">${target[m.key]}${t('unit.g')}</div>
             </div>
-            <div class="macro-bar-value">${value}<span style="color:var(--text-muted);font-size:11px;font-family:var(--font-mono);font-weight:400;"> g</span></div>
+            <div class="macro-bar-value">${value}<span style="color:var(--text-muted);font-size:11px;font-family:var(--font-mono);font-weight:400;"> ${t('unit.g')}</span></div>
             <div class="macro-bar-track">
               <div class="macro-bar-fill ${m.cls}" style="width:${pct}%"></div>
             </div>
@@ -650,12 +672,12 @@ function renderMealItem(meal, idx) {
     <div class="meal-item" onclick="editMeal(${idx})">
       <div class="meal-thumb">${meal.photo ? `<img src="${meal.photo}" alt="">` : (meal.emoji || '🍽️')}</div>
       <div class="meal-info">
-        <div class="meal-name">${escapeHtml(meal.name)}</div>
+        <div class="meal-name">${escapeHtml(mealName(meal))}</div>
         <div class="meal-meta">
-          <span>${meal.amount}${meal.unit}</span>
-          <span>P ${Math.round(meal.p)}</span>
-          <span>C ${Math.round(meal.c)}</span>
-          <span>F ${Math.round(meal.f)}</span>
+          <span>${meal.amount}${unitLabel(meal.unit)}</span>
+          <span>${t('macro.pShort')} ${Math.round(meal.p)}</span>
+          <span>${t('macro.cShort')} ${Math.round(meal.c)}</span>
+          <span>${t('macro.fShort')} ${Math.round(meal.f)}</span>
         </div>
       </div>
       <div class="meal-cals">${meal.kcal}</div>
@@ -666,19 +688,19 @@ function renderMealItem(meal, idx) {
 function renderQuickEntry(date) {
   const day = STATE.log[date] || {};
   return `
-    <h3 class="section-title">Today's stats</h3>
+    <h3 class="section-title">${t('today.stats')}</h3>
     <div class="stat-grid stat-grid-3" style="grid-template-columns:repeat(3,1fr);">
       <div class="stat" onclick="openLogWeight()" style="cursor:pointer;">
-        <div class="stat-value muted">${day.weight ? day.weight + 'kg' : '—'}</div>
-        <div class="stat-label">Weight</div>
+        <div class="stat-value muted">${day.weight ? day.weight + t('unit.kg') : '—'}</div>
+        <div class="stat-label">${t('today.weight')}</div>
       </div>
       <div class="stat" onclick="openLogSteps()" style="cursor:pointer;">
         <div class="stat-value muted">${day.steps ? formatNum(day.steps) : '—'}</div>
-        <div class="stat-label">Steps</div>
+        <div class="stat-label">${t('today.steps')}</div>
       </div>
       <div class="stat" onclick="toggleTraining()" style="cursor:pointer;">
-        <div class="stat-value ${day.trained ? '' : 'muted'}" style="${day.trained ? '' : 'color:var(--text-muted);'}">${day.trained ? 'YES' : 'NO'}</div>
-        <div class="stat-label">Trained</div>
+        <div class="stat-value ${day.trained ? '' : 'muted'}" style="${day.trained ? '' : 'color:var(--text-muted);'}">${day.trained ? t('common.yes') : t('common.no')}</div>
+        <div class="stat-label">${t('today.trained')}</div>
       </div>
     </div>
   `;
@@ -724,35 +746,34 @@ function renderAddFoodModal() {
     return renderQuantityConfirm();
   }
 
-  const mealLabel = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks' }[addFoodState.mealType] || 'Food';
   const hasApi = !!STATE.profile.apiKey;
 
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <h2 class="modal-title">Add to ${mealLabel}</h2>
+      <h2 class="modal-title">${t('add.title.' + (addFoodState.mealType || 'snack'))}</h2>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
         <button class="btn btn-secondary" onclick="capturePhoto()" style="padding:14px;font-size:13px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Photo ${hasApi ? '' : '<span style="color:var(--text-muted);font-size:10px;">·offline</span>'}
+          ${t('add.photo')} ${hasApi ? '' : `<span style="color:var(--text-muted);font-size:10px;">·${t('add.offline')}</span>`}
         </button>
         <button class="btn btn-secondary" onclick="openManualEntry()" style="padding:14px;font-size:13px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Manual
+          ${t('add.manual')}
         </button>
       </div>
 
       <div class="search-input-wrap">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input type="text" id="food-search" placeholder="Search 150+ foods..." value="${escapeHtml(addFoodState.query)}" oninput="onSearchInput(this.value)" autocomplete="off">
+        <input type="text" id="food-search" placeholder="${t('add.search', { n: FOODS.length })}" value="${escapeHtml(addFoodState.query)}" oninput="onSearchInput(this.value)" autocomplete="off">
       </div>
 
       <div class="scroll-x" style="margin-bottom:12px;">
         ${FOOD_CATEGORIES.map(c => `
-          <span class="pill ${addFoodState.category === c.id ? 'active' : ''}" onclick="setCategory('${c.id}')">${c.name}</span>
+          <span class="pill ${addFoodState.category === c.id ? 'active' : ''}" onclick="setCategory('${c.id}')">${catName(c)}</span>
         `).join('')}
       </div>
 
@@ -772,16 +793,16 @@ function renderAddFoodModal() {
 function renderFoodResults() {
   const results = searchFoods(addFoodState.query, addFoodState.category);
   if (results.length === 0) {
-    return `<div class="empty"><div class="empty-icon">🔎</div><div>No foods found.</div><div style="margin-top:8px;font-size:12px;">Try different keywords or use Manual entry.</div></div>`;
+    return `<div class="empty"><div class="empty-icon">🔎</div><div>${t('add.noResults')}</div><div style="margin-top:8px;font-size:12px;">${t('add.noResultsHint')}</div></div>`;
   }
   return results.map(f => `
     <div class="food-result" onclick="pickFood('${f.id}')">
       <div class="meal-thumb" style="background:var(--bg-elev-2);">${f.emoji}</div>
       <div class="food-result-info">
-        <div class="food-result-name">${f.name}${f.custom ? ' <span class="recipe-tag" style="font-size:9px;vertical-align:middle;">MINE</span>' : ''}</div>
+        <div class="food-result-name">${escapeHtml(foodName(f))}${f.custom ? ` <span class="recipe-tag" style="font-size:9px;vertical-align:middle;">${t('add.mine')}</span>` : ''}</div>
         <div class="food-result-meta">
-          per ${f.unit === 'piece' ? '1 pc' : '100' + f.unit} ·
-          P ${f.p}g · C ${f.c}g · F ${f.f}g
+          ${t('add.per', { u: f.unit === 'piece' ? '1 ' + unitLabel('pc') : '100 ' + unitLabel(f.unit) })} ·
+          ${t('macro.pShort')} ${f.p}${t('unit.g')} · ${t('macro.cShort')} ${f.c}${t('unit.g')} · ${t('macro.fShort')} ${f.f}${t('unit.g')}
         </div>
       </div>
       <div class="food-result-cals">${f.kcal}</div>
@@ -827,43 +848,43 @@ function renderQuantityConfirm() {
 
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="addFoodState.pendingFood=null;renderAddFoodModal()" aria-label="Back">
+      <button class="modal-close-btn" onclick="addFoodState.pendingFood=null;renderAddFoodModal()" aria-label="${t('common.back')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
 
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-right:44px;">
         <div class="meal-thumb" style="width:56px;height:56px;font-size:28px;background:var(--bg-elev-2);">${food.emoji}</div>
         <div>
-          <div style="font-weight:700;font-size:16px;">${food.name}</div>
-          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">${food.kcal} kcal per ${isPiece ? 'piece' : '100' + food.unit}</div>
+          <div style="font-weight:700;font-size:16px;">${escapeHtml(foodName(food))}</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">${t('add.kcalPer', { n: food.kcal, u: isPiece ? t('add.perPiece') : '100 ' + unitLabel(food.unit) })}</div>
         </div>
       </div>
 
-      <label>Amount</label>
+      <label>${t('add.amount')}</label>
       <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:16px;">
         <input type="number" id="qty-input" value="${amount}" min="0" step="${isPiece ? 1 : 5}"
                oninput="updateQty(this.value)">
-        <div style="font-family:var(--font-mono);font-size:14px;color:var(--text-dim);padding:0 6px;">${isPiece ? 'pc' : food.unit}</div>
+        <div style="font-family:var(--font-mono);font-size:14px;color:var(--text-dim);padding:0 6px;">${unitLabel(isPiece ? 'pc' : food.unit)}</div>
       </div>
 
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;">
         ${presets.map(p => `
-          <button class="pill ${amount === p ? 'active' : ''}" onclick="document.getElementById('qty-input').value=${p};updateQty(${p})">${p}${isPiece ? '' : food.unit}</button>
+          <button class="pill ${amount === p ? 'active' : ''}" onclick="document.getElementById('qty-input').value=${p};updateQty(${p})">${p}${isPiece ? '' : unitLabel(food.unit)}</button>
         `).join('')}
       </div>
 
       <div class="card" style="margin-bottom:20px;">
-        <div class="eyebrow" style="margin-bottom:8px;">Will add</div>
+        <div class="eyebrow" style="margin-bottom:8px;">${t('add.willAdd')}</div>
         <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:baseline;">
           <div style="font-family:var(--font-display);font-size:32px;color:var(--accent);" id="qc-kcal">${macros.kcal}</div>
-          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">PROTEIN</div><div style="font-family:var(--font-display);font-size:14px;" id="qc-p">${macros.p}g</div></div>
-          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">CARBS</div><div style="font-family:var(--font-display);font-size:14px;" id="qc-c">${macros.c}g</div></div>
-          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">FAT</div><div style="font-family:var(--font-display);font-size:14px;" id="qc-f">${macros.f}g</div></div>
+          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">${t('macro.proteinCaps')}</div><div style="font-family:var(--font-display);font-size:14px;" id="qc-p">${macros.p}${t('unit.g')}</div></div>
+          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">${t('macro.carbsCaps')}</div><div style="font-family:var(--font-display);font-size:14px;" id="qc-c">${macros.c}${t('unit.g')}</div></div>
+          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">${t('macro.fatCaps')}</div><div style="font-family:var(--font-display);font-size:14px;" id="qc-f">${macros.f}${t('unit.g')}</div></div>
         </div>
       </div>
 
       <button class="btn btn-primary btn-block btn-lg" onclick="confirmAddFood()">
-        Add to ${({breakfast:'breakfast',lunch:'lunch',dinner:'dinner',snack:'snacks'})[addFoodState.mealType]}
+        ${t('add.addTo.' + (addFoodState.mealType || 'snack'))}
       </button>
     </div>
   `);
@@ -876,9 +897,9 @@ function updateQty(value) {
   const macros = computeMacros(food.id, n);
   const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
   set('qc-kcal', macros.kcal);
-  set('qc-p', macros.p + 'g');
-  set('qc-c', macros.c + 'g');
-  set('qc-f', macros.f + 'g');
+  set('qc-p', macros.p + t('unit.g'));
+  set('qc-c', macros.c + t('unit.g'));
+  set('qc-f', macros.f + t('unit.g'));
   // Update active pill
   const pills = document.querySelectorAll('.pill');
   // (not critical — pills visual stays consistent enough)
@@ -888,13 +909,13 @@ function confirmAddFood() {
   const food = addFoodState.pendingFood;
   const amount = addFoodState.pendingAmount;
   if (!food || !amount || amount <= 0) {
-    toast('Enter a valid amount', 'danger');
+    toast(t('toast.validAmount'), 'danger');
     return;
   }
   const macros = computeMacros(food.id, amount);
   const meal = {
     foodId: food.id,
-    name: food.name,
+    name: foodName(food),
     emoji: food.emoji,
     type: addFoodState.mealType,
     amount,
@@ -918,7 +939,7 @@ function confirmAddFood() {
   save();
   closeModal();
   renderApp();
-  toast(`Added ${macros.kcal} kcal`);
+  toast(t('toast.addedKcal', { n: macros.kcal }));
 }
 
 function editMeal(idx) {
@@ -927,21 +948,21 @@ function editMeal(idx) {
 
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
 
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-right:44px;">
         <div class="meal-thumb" style="width:56px;height:56px;font-size:28px;background:var(--bg-elev-2);">${meal.emoji || '🍽️'}</div>
         <div>
-          <div style="font-weight:700;font-size:16px;">${escapeHtml(meal.name)}</div>
-          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">${meal.kcal} kcal · ${meal.amount}${meal.unit}</div>
+          <div style="font-weight:700;font-size:16px;">${escapeHtml(mealName(meal))}</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">${meal.kcal} ${t('unit.kcal')} · ${meal.amount}${unitLabel(meal.unit)}</div>
         </div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <button class="btn btn-secondary" onclick="closeModal();reEditMeal(${idx})">Edit</button>
-        <button class="btn btn-danger" onclick="deleteMeal(${idx})">Delete</button>
+        <button class="btn btn-secondary" onclick="closeModal();reEditMeal(${idx})">${t('common.edit')}</button>
+        <button class="btn btn-danger" onclick="deleteMeal(${idx})">${t('common.delete')}</button>
       </div>
     </div>
   `);
@@ -965,7 +986,7 @@ function reEditMeal(idx) {
     renderAddFoodModal();
   } else {
     // Manual / AI entry — open manual editor
-    openManualEntry(meal, idx);
+    openManualEntry(Object.assign({}, meal, { name: mealName(meal) }), idx);
   }
 }
 
@@ -974,7 +995,7 @@ function deleteMeal(idx) {
   save();
   closeModal();
   renderApp();
-  toast('Removed');
+  toast(t('toast.removed'));
 }
 
 
@@ -1029,15 +1050,15 @@ function capturePhoto() {
 function renderPhotoPreview() {
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <h2 class="modal-title">Analyzing...</h2>
+      <h2 class="modal-title">${t('photo.analyzing')}</h2>
       <div class="photo-preview">
-        <img src="${addFoodState.photoBase64}" alt="Captured food">
+        <img src="${addFoodState.photoBase64}" alt="">
         <div class="photo-preview-loader">
           <div class="spinner"></div>
-          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">Identifying food...</div>
+          <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">${t('photo.identifying')}</div>
         </div>
       </div>
     </div>
@@ -1048,19 +1069,19 @@ function renderPhotoPreview() {
 function renderPhotoDescribe() {
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <h2 class="modal-title">Add photo</h2>
+      <h2 class="modal-title">${t('photo.addTitle')}</h2>
       <div class="photo-preview" style="aspect-ratio:1.5/1;">
-        <img src="${addFoodState.photoBase64}" alt="Captured food">
+        <img src="${addFoodState.photoBase64}" alt="">
       </div>
-      <label>Описание (опционально)</label>
+      <label>${t('photo.descLabel')}</label>
       <input type="text" id="photo-desc" maxlength="200" autocomplete="off"
-             placeholder="e.g. эклер с заварным кремом 50 г / харчо с говядиной"
+             placeholder="${t('photo.descPlaceholder')}"
              style="text-align:left;font-size:15px;font-weight:500;font-family:var(--font-body);"
              onkeydown="if(event.key==='Enter'){event.preventDefault();submitPhotoDescribe();}">
-      <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px;" onclick="submitPhotoDescribe()">Analyze</button>
+      <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px;" onclick="submitPhotoDescribe()">${t('photo.analyze')}</button>
     </div>
   `);
 }
@@ -1075,19 +1096,19 @@ function submitPhotoDescribe() {
 function renderPhotoNoKey() {
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <h2 class="modal-title">No API key set</h2>
+      <h2 class="modal-title">${t('photo.noKeyTitle')}</h2>
       <div class="photo-preview" style="aspect-ratio:1.5/1;">
-        <img src="${addFoodState.photoBase64}" alt="Captured food">
+        <img src="${addFoodState.photoBase64}" alt="">
       </div>
       <p style="color:var(--text-dim);font-size:14px;margin-bottom:16px;line-height:1.5;">
-        To recognize food from photos, add your Anthropic API key in Settings. The photo is sent directly from your phone — nothing is stored on any server.
+        ${t('photo.noKeyText')}
       </p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <button class="btn btn-secondary" onclick="closeModal();openSettings()">Add API key</button>
-        <button class="btn btn-primary" onclick="closeModal();openManualEntry({photo:addFoodState.photoBase64})">Enter manually</button>
+        <button class="btn btn-secondary" onclick="closeModal();openSettings()">${t('photo.addKey')}</button>
+        <button class="btn btn-primary" onclick="closeModal();openManualEntry({photo:addFoodState.photoBase64})">${t('photo.enterManually')}</button>
       </div>
     </div>
   `);
@@ -1136,9 +1157,15 @@ User description rules:
 - If the description states a weight (a number next to "г", "гр", "g", "gr" or "grams", e.g. "50 г", "300g"), set estimatedGrams to exactly that number and calculate kcal/protein/carbs/fat for that weight. Do not estimate the weight visually in that case and do not ask about portion size.
 - If no weight is stated, estimate the weight from the photo as usual.`;
 
+  const langName = getLang() === 'ru' ? 'Russian' : 'English';
+  const langRule = `
+
+Language:
+- Write "name", every "question" and every option "label" in ${langName}. Keep JSON keys, "id" values and "confidence" values in English.`;
+
   const content = [
     { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Data } },
-    { type: 'text', text: desc ? prompt + descRules : prompt }
+    { type: 'text', text: (desc ? prompt + descRules : prompt) + langRule }
   ];
   if (desc) content.push({ type: 'text', text: `User description: ${desc}` });
 
@@ -1163,7 +1190,7 @@ User description rules:
 
     if (!res.ok) {
       const errText = await res.text();
-      let errMsg = `API error ${res.status}`;
+      let errMsg = t('photo.apiError', { n: res.status });
       try {
         const errJson = JSON.parse(errText);
         errMsg = errJson.error?.message || errMsg;
@@ -1182,12 +1209,12 @@ User description rules:
     try {
       parsed = JSON.parse(jsonStr);
     } catch (e) {
-      throw new Error('Could not parse response. Try again.');
+      throw new Error(t('photo.parseError'));
     }
 
     if (parsed.error === 'not_food') {
       closeModal();
-      toast('No food detected in photo', 'danger');
+      toast(t('toast.noFood'), 'danger');
       return;
     }
 
@@ -1196,17 +1223,17 @@ User description rules:
     console.error(err);
     openModal(`
       <div style="position:relative;">
-        <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+        <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
-        <h2 class="modal-title">Recognition failed</h2>
+        <h2 class="modal-title">${t('photo.failed')}</h2>
         <div class="notice notice-warn" style="margin-bottom:16px;">
-          ${escapeHtml(err.message || 'Unknown error')}
+          ${escapeHtml(err.message || t('photo.unknownError'))}
         </div>
-        <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Common causes: invalid API key, no credits, or network error.</p>
+        <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">${t('photo.failedHint')}</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <button class="btn btn-secondary" onclick="closeModal();openSettings()">Check key</button>
-          <button class="btn btn-primary" onclick="closeModal();openManualEntry({photo:addFoodState.photoBase64})">Enter manually</button>
+          <button class="btn btn-secondary" onclick="closeModal();openSettings()">${t('photo.checkKey')}</button>
+          <button class="btn btn-primary" onclick="closeModal();openManualEntry({photo:addFoodState.photoBase64})">${t('photo.enterManually')}</button>
         </div>
       </div>
     `);
@@ -1254,25 +1281,25 @@ function renderRecognitionUI() {
 
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
 
       ${addFoodState.photoBase64 ? `<div class="photo-preview" style="aspect-ratio:2/1;margin-bottom:16px;"><img src="${addFoodState.photoBase64}" alt=""></div>` : ''}
 
       <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;">
-        <h2 class="modal-title" style="margin:0;font-size:20px;">${escapeHtml(r.name || 'Unknown food')}</h2>
-        ${r.confidence ? `<span class="recipe-tag">${r.confidence}</span>` : ''}
+        <h2 class="modal-title" style="margin:0;font-size:20px;">${escapeHtml(r.name || t('photo.unknownFood'))}</h2>
+        ${r.confidence ? `<span class="recipe-tag">${hasKey('photo.conf.' + r.confidence) ? t('photo.conf.' + r.confidence) : escapeHtml(r.confidence)}</span>` : ''}
       </div>
-      <div class="eyebrow" style="margin-bottom:12px;">${edited ? `AI est. ~${baseGrams}g · adjusted` : 'AI estimate'}</div>
+      <div class="eyebrow" style="margin-bottom:12px;">${edited ? t('photo.aiAdjusted', { n: baseGrams }) : t('photo.aiEstimate')}</div>
 
-      <label>Weight (g)</label>
+      <label>${t('photo.weightLabel')}</label>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">
-        <button class="btn btn-secondary" style="width:48px;flex-shrink:0;" onclick="bumpRecogGrams(-10)" aria-label="Less">−</button>
+        <button class="btn btn-secondary" style="width:48px;flex-shrink:0;" onclick="bumpRecogGrams(-10)" aria-label="${t('photo.less')}">−</button>
         <input type="number" id="recog-grams" value="${grams}" min="1" inputmode="numeric"
                style="text-align:center;font-family:var(--font-mono);font-size:18px;font-weight:600;"
                onchange="setRecogGrams(this.value)">
-        <button class="btn btn-secondary" style="width:48px;flex-shrink:0;" onclick="bumpRecogGrams(10)" aria-label="More">+</button>
+        <button class="btn btn-secondary" style="width:48px;flex-shrink:0;" onclick="bumpRecogGrams(10)" aria-label="${t('photo.more')}">+</button>
       </div>
 
       ${(r.clarifyingQuestions || []).map((q, qi) => `
@@ -1284,7 +1311,7 @@ function renderRecognitionUI() {
                       style="padding:12px 14px;font-size:14px;"
                       onclick="answerQuestion('${q.id}', ${oi})">
                 <span style="flex:1;">${escapeHtml(opt.label)}</span>
-                ${opt.kcal_delta ? `<span style="font-family:var(--font-mono);font-size:11px;color:${opt.kcal_delta > 0 ? 'var(--warning)' : 'var(--success)'};">${opt.kcal_delta > 0 ? '+' : ''}${opt.kcal_delta} kcal</span>` : ''}
+                ${opt.kcal_delta ? `<span style="font-family:var(--font-mono);font-size:11px;color:${opt.kcal_delta > 0 ? 'var(--warning)' : 'var(--success)'};">${opt.kcal_delta > 0 ? '+' : ''}${opt.kcal_delta} ${t('unit.kcal')}</span>` : ''}
               </button>
             `).join('')}
           </div>
@@ -1294,15 +1321,15 @@ function renderRecognitionUI() {
       <div class="card" style="margin-bottom:16px;">
         <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:8px;align-items:baseline;">
           <div style="font-family:var(--font-display);font-size:32px;color:var(--accent);">${totalKcal}</div>
-          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">PROTEIN</div><div style="font-family:var(--font-display);font-size:14px;">${totalP}g</div></div>
-          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">CARBS</div><div style="font-family:var(--font-display);font-size:14px;">${totalC}g</div></div>
-          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">FAT</div><div style="font-family:var(--font-display);font-size:14px;">${totalF}g</div></div>
+          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">${t('macro.proteinCaps')}</div><div style="font-family:var(--font-display);font-size:14px;">${totalP}${t('unit.g')}</div></div>
+          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">${t('macro.carbsCaps')}</div><div style="font-family:var(--font-display);font-size:14px;">${totalC}${t('unit.g')}</div></div>
+          <div><div style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.1em;">${t('macro.fatCaps')}</div><div style="font-family:var(--font-display);font-size:14px;">${totalF}${t('unit.g')}</div></div>
         </div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <button class="btn btn-secondary" onclick="closeModal();openManualEntry({name:'${escapeHtml(r.name || '')}',kcal:${totalKcal},p:${totalP},c:${totalC},f:${totalF},photo:addFoodState.photoBase64})">Tweak</button>
-        <button class="btn btn-primary" onclick="confirmRecognized(${totalKcal}, ${totalP}, ${totalC}, ${totalF})">Add</button>
+        <button class="btn btn-secondary" onclick="closeModal();openManualEntry({name:'${escapeHtml(r.name || '')}',kcal:${totalKcal},p:${totalP},c:${totalC},f:${totalF},photo:addFoodState.photoBase64})">${t('photo.tweak')}</button>
+        <button class="btn btn-primary" onclick="confirmRecognized(${totalKcal}, ${totalP}, ${totalC}, ${totalF})">${t('common.add')}</button>
       </div>
     </div>
   `);
@@ -1329,7 +1356,7 @@ function confirmRecognized(kcal, p, c, f) {
   const r = recognitionState.base;
   const meal = {
     foodId: null, // not from catalog
-    name: r.name || 'Photo meal',
+    name: r.name || t('photo.mealFallback'),
     emoji: null,
     photo: addFoodState.photoBase64,
     type: addFoodState.mealType,
@@ -1347,7 +1374,7 @@ function confirmRecognized(kcal, p, c, f) {
   save();
   closeModal();
   renderApp();
-  toast(`Added ${kcal} kcal`);
+  toast(t('toast.addedKcal', { n: kcal }));
   recognitionState = null;
 }
 
@@ -1358,32 +1385,32 @@ function openManualEntry(prefill, editIdx) {
 
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <h2 class="modal-title">${isEdit ? 'Edit meal' : 'Manual entry'}</h2>
+      <h2 class="modal-title">${isEdit ? t('manual.editTitle') : t('manual.title')}</h2>
 
       ${prefill.photo ? `<div class="photo-preview" style="aspect-ratio:2/1;margin-bottom:16px;"><img src="${prefill.photo}" alt=""></div>` : ''}
 
-      <label>Name</label>
-      <input type="text" id="me-name" placeholder="e.g. Grandma's stew" value="${escapeHtml(prefill.name || '')}" style="text-align:left;font-size:15px;font-weight:500;font-family:var(--font-body);">
+      <label>${t('manual.name')}</label>
+      <input type="text" id="me-name" placeholder="${t('manual.namePlaceholder')}" value="${escapeHtml(prefill.name || '')}" style="text-align:left;font-size:15px;font-weight:500;font-family:var(--font-body);">
 
-      <label style="margin-top:16px;">Calories (kcal)</label>
+      <label style="margin-top:16px;">${t('manual.kcal')}</label>
       <input type="number" id="me-kcal" placeholder="0" value="${prefill.kcal || ''}" min="0">
 
       <div class="qty-row" style="margin-top:16px;">
         <div class="qty-input-group">
-          <label>Protein g</label>
+          <label>${t('manual.protein')}</label>
           <input type="number" id="me-p" placeholder="0" value="${prefill.p || ''}" min="0" step="0.1">
         </div>
         <div class="qty-input-group">
-          <label>Carbs g</label>
+          <label>${t('manual.carbs')}</label>
           <input type="number" id="me-c" placeholder="0" value="${prefill.c || ''}" min="0" step="0.1">
         </div>
       </div>
 
       <div class="qty-input-group" style="margin-bottom:16px;">
-        <label>Fat g</label>
+        <label>${t('manual.fat')}</label>
         <input type="number" id="me-f" placeholder="0" value="${prefill.f || ''}" min="0" step="0.1">
       </div>
 
@@ -1391,17 +1418,17 @@ function openManualEntry(prefill, editIdx) {
       <div id="save-food-toggle" class="toggle-card" onclick="toggleSaveFood()" style="margin-bottom:12px;">
         <div class="toggle-icon">★</div>
         <div class="toggle-info">
-          <div class="toggle-title">Save to my foods</div>
-          <div class="toggle-sub">REUSE IT FROM SEARCH LATER</div>
+          <div class="toggle-title">${t('manual.saveToggle')}</div>
+          <div class="toggle-sub">${t('manual.saveToggleSub')}</div>
         </div>
       </div>
       <div id="save-food-weight-wrap" style="display:none;margin-bottom:16px;">
-        <label>Portion weight (g) — the macros above are for this weight</label>
+        <label>${t('manual.portionWeight')}</label>
         <input type="number" id="me-weight" placeholder="100" value="100" min="1">
       </div>
       `}
 
-      <button class="btn btn-primary btn-block btn-lg" onclick="confirmManual(${editIdx === undefined ? 'null' : editIdx}, ${prefill.photo ? "'" + prefill.photo + "'" : 'null'})">${isEdit ? 'Save' : 'Add'}</button>
+      <button class="btn btn-primary btn-block btn-lg" onclick="confirmManual(${editIdx === undefined ? 'null' : editIdx}, ${prefill.photo ? "'" + prefill.photo + "'" : 'null'})">${isEdit ? t('common.save') : t('common.add')}</button>
     </div>
   `);
 
@@ -1418,8 +1445,8 @@ function confirmManual(editIdx, photoData) {
   const c = parseFloat(document.getElementById('me-c').value) || 0;
   const f = parseFloat(document.getElementById('me-f').value) || 0;
 
-  if (!name) { toast('Enter a name', 'danger'); return; }
-  if (kcal <= 0) { toast('Enter calories', 'danger'); return; }
+  if (!name) { toast(t('toast.enterName'), 'danger'); return; }
+  if (kcal <= 0) { toast(t('toast.enterKcal'), 'danger'); return; }
 
   const meal = {
     foodId: null,
@@ -1479,7 +1506,7 @@ function confirmManual(editIdx, photoData) {
   save();
   closeModal();
   renderApp();
-  toast(editIdx !== null ? 'Updated' : (savedToFoods ? `Added · saved to my foods` : `Added ${kcal} kcal`));
+  toast(editIdx !== null ? t('toast.updated') : (savedToFoods ? t('toast.addedSaved') : t('toast.addedKcal', { n: kcal })));
 }
 
 function toggleSaveFood() {
@@ -1497,15 +1524,15 @@ function openLogWeight() {
 
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <h2 class="modal-title">Log weight</h2>
-      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">Weigh in the morning, after the bathroom, before food. Most reliable trend.</p>
+      <h2 class="modal-title">${t('weight.title')}</h2>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">${t('weight.hint')}</p>
       <input type="number" id="weight-input" value="${current}" step="0.1" min="30" max="300" style="font-size:48px;padding:24px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;">
-        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="confirmWeight()">Save</button>
+        <button class="btn btn-secondary" onclick="closeModal()">${t('common.cancel')}</button>
+        <button class="btn btn-primary" onclick="confirmWeight()">${t('common.save')}</button>
       </div>
     </div>
   `);
@@ -1514,14 +1541,14 @@ function openLogWeight() {
 
 function confirmWeight() {
   const w = parseFloat(document.getElementById('weight-input').value);
-  if (!w || w < 30 || w > 300) { toast('Enter a valid weight', 'danger'); return; }
+  if (!w || w < 30 || w > 300) { toast(t('toast.validWeight'), 'danger'); return; }
   if (!STATE.log[STATE.currentDate]) STATE.log[STATE.currentDate] = {};
   STATE.log[STATE.currentDate].weight = w;
   STATE.profile.currentWeight = w;
   save();
   closeModal();
   renderApp();
-  toast(`Logged ${w} kg`);
+  toast(t('toast.loggedWeight', { n: w }));
   // Trigger recalibration check (it'll be a noop unless a week has passed)
   setTimeout(maybeRecalibrate, 600);
 }
@@ -1532,10 +1559,10 @@ function openLogSteps() {
 
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <h2 class="modal-title">Log steps</h2>
+      <h2 class="modal-title">${t('steps.title')}</h2>
       <input type="number" id="steps-input" value="${current}" step="100" min="0" max="50000" style="font-size:48px;padding:24px;">
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:16px;margin-bottom:20px;">
         ${[3000, 5000, 8000, 10000, 12000, 15000].map(p => `
@@ -1543,8 +1570,8 @@ function openLogSteps() {
         `).join('')}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="confirmSteps()">Save</button>
+        <button class="btn btn-secondary" onclick="closeModal()">${t('common.cancel')}</button>
+        <button class="btn btn-primary" onclick="confirmSteps()">${t('common.save')}</button>
       </div>
     </div>
   `);
@@ -1553,13 +1580,13 @@ function openLogSteps() {
 
 function confirmSteps() {
   const s = parseInt(document.getElementById('steps-input').value);
-  if (isNaN(s) || s < 0) { toast('Enter a valid number', 'danger'); return; }
+  if (isNaN(s) || s < 0) { toast(t('toast.validNumber'), 'danger'); return; }
   if (!STATE.log[STATE.currentDate]) STATE.log[STATE.currentDate] = {};
   STATE.log[STATE.currentDate].steps = s;
   save();
   closeModal();
   renderApp();
-  toast(`Logged ${formatNum(s)} steps`);
+  toast(t('toast.loggedSteps', { n: formatNum(s) }));
 }
 
 function toggleTraining() {
@@ -1567,7 +1594,7 @@ function toggleTraining() {
   STATE.log[STATE.currentDate].trained = !STATE.log[STATE.currentDate].trained;
   save();
   renderApp();
-  toast(STATE.log[STATE.currentDate].trained ? 'Training day on — extra kcal granted' : 'Training day off');
+  toast(STATE.log[STATE.currentDate].trained ? t('toast.trainingOn') : t('toast.trainingOff'));
 }
 
 
@@ -1592,64 +1619,64 @@ function renderBody() {
     <div class="screen">
       <div class="header">
         <div class="logo">FUEL</div>
-        <button class="btn-icon" onclick="openSettings()" aria-label="Settings">
+        <button class="btn-icon" onclick="openSettings()" aria-label="${t('settings.title')}">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         </button>
       </div>
 
       <div class="today-banner">
-        <div class="eyebrow">Body</div>
-        <h1 class="today-title">${current} kg</h1>
+        <div class="eyebrow">${t('nav.body')}</div>
+        <h1 class="today-title">${current} ${t('unit.kg')}</h1>
         <p class="today-sub">
-          ${change === 0 ? 'No change yet' :
-            change > 0 ? `+${change.toFixed(1)} kg from start (${changePct >= 0 ? '+' : ''}${changePct.toFixed(1)}%)` :
-            `${change.toFixed(1)} kg from start (${changePct.toFixed(1)}%)`}
+          ${change === 0 ? t('body.noChange') :
+            change > 0 ? t('body.fromStart', { n: '+' + change.toFixed(1), pct: (changePct >= 0 ? '+' : '') + changePct.toFixed(1) }) :
+            t('body.fromStart', { n: change.toFixed(1), pct: changePct.toFixed(1) })}
         </p>
         <button class="btn btn-primary" onclick="openLogWeight()" style="position:relative;z-index:1;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-          Log today's weight
+          ${t('body.logWeight')}
         </button>
       </div>
 
-      <h3 class="section-title">Weight trend <span class="count">${last30.length} entries</span></h3>
-      ${last30.length >= 2 ? renderWeightChart(last30) : `<div class="card"><div class="empty"><div class="empty-icon">📊</div><div>Need at least 2 weigh-ins to plot a trend.</div></div></div>`}
+      <h3 class="section-title">${t('body.trend')} <span class="count">${plural(last30.length, 'plural.entries')}</span></h3>
+      ${last30.length >= 2 ? renderWeightChart(last30) : `<div class="card"><div class="empty"><div class="empty-icon">📊</div><div>${t('body.needTwo')}</div></div></div>`}
 
-      <h3 class="section-title">Body stats</h3>
+      <h3 class="section-title">${t('body.stats')}</h3>
       <div class="card">
         <div class="list-row">
-          <span class="list-row-label">Starting weight</span>
-          <span class="list-row-value">${start} kg</span>
+          <span class="list-row-label">${t('body.startWeight')}</span>
+          <span class="list-row-value">${start} ${t('unit.kg')}</span>
         </div>
         <div class="list-row">
-          <span class="list-row-label">Current weight</span>
-          <span class="list-row-value">${current} kg</span>
+          <span class="list-row-label">${t('body.currentWeight')}</span>
+          <span class="list-row-value">${current} ${t('unit.kg')}</span>
         </div>
         <div class="list-row">
-          <span class="list-row-label">Total change</span>
-          <span class="list-row-value" style="color:${change > 0 ? 'var(--success)' : change < 0 ? 'var(--macro-protein)' : ''};">${change >= 0 ? '+' : ''}${change.toFixed(1)} kg</span>
+          <span class="list-row-label">${t('body.totalChange')}</span>
+          <span class="list-row-value" style="color:${change > 0 ? 'var(--success)' : change < 0 ? 'var(--macro-protein)' : ''};">${change >= 0 ? '+' : ''}${change.toFixed(1)} ${t('unit.kg')}</span>
         </div>
         <div class="list-row">
-          <span class="list-row-label">Height</span>
-          <span class="list-row-value">${profile.height} cm</span>
+          <span class="list-row-label">${t('body.height')}</span>
+          <span class="list-row-value">${profile.height} ${t('unit.cm')}</span>
         </div>
         <div class="list-row">
-          <span class="list-row-label">BMI</span>
+          <span class="list-row-label">${t('body.bmi')}</span>
           <span class="list-row-value">${(current / Math.pow(profile.height / 100, 2)).toFixed(1)}</span>
         </div>
         <div class="list-row">
-          <span class="list-row-label">BMR</span>
-          <span class="list-row-value">${Math.round(calcBMR(profile))} kcal</span>
+          <span class="list-row-label">${t('body.bmr')}</span>
+          <span class="list-row-value">${Math.round(calcBMR(profile))} ${t('unit.kcal')}</span>
         </div>
         <div class="list-row">
-          <span class="list-row-label">TDEE</span>
-          <span class="list-row-value">${calcTDEE(profile)} kcal</span>
+          <span class="list-row-label">${t('body.tdee')}</span>
+          <span class="list-row-value">${calcTDEE(profile)} ${t('unit.kcal')}</span>
         </div>
         <div class="list-row">
-          <span class="list-row-label">Daily target</span>
-          <span class="list-row-value" style="color:var(--accent);">${calcCalorieTarget(profile)} kcal${STATE.customTarget ? ' *' : ''}</span>
+          <span class="list-row-label">${t('common.dailyTarget')}</span>
+          <span class="list-row-value" style="color:var(--accent);">${calcCalorieTarget(profile)} ${t('unit.kcal')}${STATE.customTarget ? ' *' : ''}</span>
         </div>
       </div>
-      ${STATE.customTarget ? `<div class="notice notice-info" style="margin-top:8px;">* Auto-adjusted by FUEL based on your real progress</div>` : ''}
+      ${STATE.customTarget ? `<div class="notice notice-info" style="margin-top:8px;">* ${t('body.autoAdjusted')}</div>` : ''}
     </div>
   `);
 }
@@ -1728,47 +1755,47 @@ function renderPlan() {
     <div class="screen">
       <div class="header">
         <div class="logo">FUEL</div>
-        <div class="eyebrow">Plan</div>
+        <div class="eyebrow">${t('nav.plan')}</div>
       </div>
 
       <div class="today-banner">
-        <div class="eyebrow">Meal generator</div>
-        <h1 class="today-title">Plan a day</h1>
-        <p class="today-sub">Choose filters, get a full day of meals at ~${target} kcal.</p>
+        <div class="eyebrow">${t('plan.eyebrow')}</div>
+        <h1 class="today-title">${t('plan.title')}</h1>
+        <p class="today-sub">${t('plan.sub', { n: target })}</p>
       </div>
 
-      <h3 class="section-title">Cuisine</h3>
+      <h3 class="section-title">${t('plan.cuisine')}</h3>
       <div class="pill-row">
         ${[
-          { id: 'any', label: 'Any' },
-          { id: 'russian', label: 'Russian' },
-          { id: 'caucasian', label: 'Caucasian' }
+          { id: 'any', label: t('common.any') },
+          { id: 'russian', label: t('cuisine.russian') },
+          { id: 'caucasian', label: t('cuisine.caucasian') }
         ].map(c => `<span class="pill ${planFilters.cuisine === c.id ? 'active' : ''}" onclick="setPlanFilter('cuisine','${c.id}')">${c.label}</span>`).join('')}
       </div>
 
-      <h3 class="section-title">Max time per meal</h3>
+      <h3 class="section-title">${t('plan.maxTime')}</h3>
       <div class="pill-row">
         ${[
-          { id: null, label: 'Any' },
-          { id: 15, label: '≤15 min' },
-          { id: 30, label: '≤30 min' },
-          { id: 60, label: '≤60 min' }
+          { id: null, label: t('common.any') },
+          { id: 15, label: '≤15 ' + t('unit.min') },
+          { id: 30, label: '≤30 ' + t('unit.min') },
+          { id: 60, label: '≤60 ' + t('unit.min') }
         ].map(c => `<span class="pill ${planFilters.maxTime === c.id ? 'active' : ''}" onclick="setPlanFilter('maxTime', ${c.id})">${c.label}</span>`).join('')}
       </div>
 
-      <h3 class="section-title">Difficulty</h3>
+      <h3 class="section-title">${t('plan.difficulty')}</h3>
       <div class="pill-row">
         ${[
-          { id: null, label: 'Any' },
-          { id: 1, label: 'Easy only' },
-          { id: 2, label: '≤Medium' }
+          { id: null, label: t('common.any') },
+          { id: 1, label: t('plan.easyOnly') },
+          { id: 2, label: t('plan.upToMedium') }
         ].map(c => `<span class="pill ${planFilters.maxComplexity === c.id ? 'active' : ''}" onclick="setPlanFilter('maxComplexity', ${c.id})">${c.label}</span>`).join('')}
       </div>
 
-      <h3 class="section-title">Budget</h3>
+      <h3 class="section-title">${t('plan.budget')}</h3>
       <div class="pill-row">
         ${[
-          { id: null, label: 'Any' },
+          { id: null, label: t('common.any') },
           { id: 1, label: '$' },
           { id: 2, label: '$$' },
           { id: 3, label: '$$$' }
@@ -1777,7 +1804,7 @@ function renderPlan() {
 
       <button class="btn btn-primary btn-block btn-lg" onclick="generatePlan()" style="margin-top:16px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-        Generate day plan
+        ${t('plan.generate')}
       </button>
 
       ${currentPlan ? renderPlanResult(currentPlan, target) : ''}
@@ -1794,7 +1821,7 @@ function generatePlan() {
   const target = calcCalorieTarget(STATE.profile);
   const plan = generateDayPlan(planFilters, target);
   if (!plan) {
-    toast('No combination matches these filters. Loosen them up.', 'danger');
+    toast(t('toast.noPlan'), 'danger');
     return;
   }
   currentPlan = plan;
@@ -1808,19 +1835,19 @@ function generatePlan() {
 
 function renderPlanResult(plan, target) {
   const meals = [
-    { key: 'breakfast', label: 'Breakfast', emoji: '☀️', recipe: plan.breakfast },
-    { key: 'lunch', label: 'Lunch', emoji: '🍽️', recipe: plan.lunch },
-    { key: 'dinner', label: 'Dinner', emoji: '🌙', recipe: plan.dinner }
+    { key: 'breakfast', label: t('meal.breakfast'), emoji: '☀️', recipe: plan.breakfast },
+    { key: 'lunch', label: t('meal.lunch'), emoji: '🍽️', recipe: plan.lunch },
+    { key: 'dinner', label: t('meal.dinner'), emoji: '🌙', recipe: plan.dinner }
   ];
-  if (plan.snack) meals.push({ key: 'snack', label: 'Snack', emoji: '🥨', recipe: plan.snack });
+  if (plan.snack) meals.push({ key: 'snack', label: t('meal.snack'), emoji: '🥨', recipe: plan.snack });
 
   return `
     <div id="plan-result">
-      <h3 class="section-title">Your day <span class="count">${plan.totalKcal} / ${target} kcal</span></h3>
+      <h3 class="section-title">${t('plan.yourDay')} <span class="count">${plan.totalKcal} / ${target} ${t('unit.kcal')}</span></h3>
       ${meals.map(m => renderRecipeCard(m.recipe, m.emoji, m.label, m.key)).join('')}
       <button class="btn btn-secondary btn-block" onclick="addPlanToToday()" style="margin-top:12px;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        Add full plan to today's log
+        ${t('plan.addAll')}
       </button>
     </div>
   `;
@@ -1837,34 +1864,34 @@ function renderRecipeCard(recipe, emoji, mealLabel, mealKey) {
         <div class="recipe-emoji">${recipe.emoji}</div>
         <div class="recipe-info">
           <div class="recipe-name">
-            ${escapeHtml(recipe.name)}
-            ${recipe.cuisine && recipe.cuisine !== 'universal' ? `<span class="recipe-tag cuisine">${recipe.cuisine}</span>` : ''}
+            ${escapeHtml(recipeName(recipe))}
+            ${recipe.cuisine && recipe.cuisine !== 'universal' ? `<span class="recipe-tag cuisine">${cuisineLabel(recipe.cuisine)}</span>` : ''}
           </div>
           <div class="recipe-meta">
-            <span>⏱ ${recipe.time}m</span>
+            <span>⏱ ${recipe.time} ${t('unit.min')}</span>
             <span>${complexityLabel(recipe.complexity)}</span>
             <span>${recipeCostLabel(recipe.cost)}</span>
-            <span style="color:var(--accent);">${macros.kcal} kcal</span>
-            <span>P${Math.round(macros.p)} C${Math.round(macros.c)} F${Math.round(macros.f)}</span>
+            <span style="color:var(--accent);">${macros.kcal} ${t('unit.kcal')}</span>
+            <span>${t('macro.pShort')}${Math.round(macros.p)} ${t('macro.cShort')}${Math.round(macros.c)} ${t('macro.fShort')}${Math.round(macros.f)}</span>
           </div>
         </div>
       </div>
       ${isExpanded ? `
         <div class="recipe-card-body">
-          <div class="eyebrow" style="margin-bottom:8px;">Ingredients</div>
+          <div class="eyebrow" style="margin-bottom:8px;">${t('plan.ingredients')}</div>
           ${recipe.ingredients.map(ing => {
             const food = foodById(ing.foodId);
-            const unit = food?.unit === 'piece' ? (ing.amount === 1 ? ' pc' : ' pcs') : food?.unit || 'g';
-            return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>${food?.emoji || ''} ${food?.name || ing.foodId}</span><span class="mono" style="color:var(--text-dim);">${ing.amount}${unit}</span></div>`;
+            const unit = food?.unit === 'piece' ? ' ' + plural(ing.amount, 'plural.pcs', true) : unitLabel(food?.unit || 'g');
+            return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>${food?.emoji || ''} ${food ? escapeHtml(foodName(food)) : ing.foodId}</span><span class="mono" style="color:var(--text-dim);">${ing.amount}${unit}</span></div>`;
           }).join('')}
-          <div class="eyebrow" style="margin:14px 0 8px;">Steps</div>
+          <div class="eyebrow" style="margin:14px 0 8px;">${t('plan.steps')}</div>
           <ol style="padding-left:20px;font-size:13px;line-height:1.6;">
-            ${recipe.steps.map(s => `<li style="margin-bottom:6px;color:var(--text);">${escapeHtml(s)}</li>`).join('')}
+            ${recipeSteps(recipe).map(s => `<li style="margin-bottom:6px;color:var(--text);">${escapeHtml(s)}</li>`).join('')}
           </ol>
           <div class="recipe-actions">
             <button class="btn btn-secondary btn-sm" onclick="addRecipeToLog('${recipe.id}', '${mealKey}')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-              Add to log
+              ${t('plan.addToLog')}
             </button>
           </div>
         </div>
@@ -1884,7 +1911,8 @@ function addRecipeToLog(recipeId, mealType) {
   const macros = recipeMacros(recipe);
   const meal = {
     foodId: null,
-    name: recipe.name,
+    recipeId: recipe.id,
+    name: recipeName(recipe),
     emoji: recipe.emoji,
     type: mealType || 'lunch',
     amount: 1,
@@ -1899,7 +1927,7 @@ function addRecipeToLog(recipeId, mealType) {
   if (!STATE.log[STATE.currentDate].meals) STATE.log[STATE.currentDate].meals = [];
   STATE.log[STATE.currentDate].meals.push(meal);
   save();
-  toast(`Added "${recipe.name}" to today`);
+  toast(t('toast.recipeAdded', { name: recipeName(recipe) }));
 }
 
 function addPlanToToday() {
@@ -1918,7 +1946,8 @@ function addPlanToToday() {
     const macros = recipeMacros(item.recipe);
     STATE.log[STATE.currentDate].meals.push({
       foodId: null,
-      name: item.recipe.name,
+      recipeId: item.recipe.id,
+      name: recipeName(item.recipe),
       emoji: item.recipe.emoji,
       type: item.type,
       amount: 1,
@@ -1931,7 +1960,7 @@ function addPlanToToday() {
     });
   }
   save();
-  toast(`Added ${items.length} meals to today`);
+  toast(t('toast.planAdded', { n: plural(items.length, 'plural.meals') }));
   STATE.view = 'today';
   renderApp();
 }
@@ -1947,20 +1976,20 @@ function renderLog() {
     <div class="screen">
       <div class="header">
         <div class="logo">FUEL</div>
-        <div class="eyebrow">Log</div>
+        <div class="eyebrow">${t('nav.log')}</div>
       </div>
 
       <div class="today-banner">
-        <div class="eyebrow">History</div>
-        <h1 class="today-title">${dates.length} ${dates.length === 1 ? 'day' : 'days'}</h1>
-        <p class="today-sub">Tap any day to view or edit it.</p>
+        <div class="eyebrow">${t('log.history')}</div>
+        <h1 class="today-title">${plural(dates.length, 'plural.days')}</h1>
+        <p class="today-sub">${t('log.sub')}</p>
       </div>
 
       ${dates.length === 0 ? `
         <div class="card"><div class="empty">
           <div class="empty-icon">📖</div>
-          <div>No log entries yet.</div>
-          <div style="margin-top:8px;font-size:12px;">Start tracking on the Today tab.</div>
+          <div>${t('log.empty')}</div>
+          <div style="margin-top:8px;font-size:12px;">${t('log.emptyHint')}</div>
         </div></div>
       ` : dates.map(d => {
         const day = STATE.log[d];
@@ -1974,14 +2003,14 @@ function renderLog() {
             <div style="display:flex;align-items:center;gap:12px;">
               <div style="text-align:center;min-width:48px;">
                 <div style="font-family:var(--font-display);font-size:22px;line-height:1;">${dt.getDate()}</div>
-                <div class="eyebrow" style="font-size:9px;margin-top:2px;">${dt.toLocaleDateString('en-US',{month:'short'})}</div>
+                <div class="eyebrow" style="font-size:9px;margin-top:2px;">${dt.toLocaleDateString(locale(),{month:'short'})}</div>
               </div>
               <div style="flex:1;min-width:0;">
-                <div style="font-weight:600;font-size:14px;margin-bottom:2px;">${isToday ? 'Today' : dt.toLocaleDateString('en-US',{weekday:'long'})}</div>
+                <div style="font-weight:600;font-size:14px;margin-bottom:2px;">${isToday ? t('common.today') : capitalize(dt.toLocaleDateString(locale(),{weekday:'long'}))}</div>
                 <div style="display:flex;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);flex-wrap:wrap;">
-                  ${totals.kcal > 0 ? `<span>${totals.kcal} kcal</span>` : ''}
-                  ${day.weight ? `<span>⚖ ${day.weight}kg</span>` : ''}
-                  ${day.trained ? `<span style="color:var(--accent);">💪 trained</span>` : ''}
+                  ${totals.kcal > 0 ? `<span>${totals.kcal} ${t('unit.kcal')}</span>` : ''}
+                  ${day.weight ? `<span>⚖ ${day.weight}${t('unit.kg')}</span>` : ''}
+                  ${day.trained ? `<span style="color:var(--accent);">💪 ${t('log.trained')}</span>` : ''}
                   ${day.steps ? `<span>👟 ${formatNum(day.steps)}</span>` : ''}
                 </div>
               </div>
@@ -1990,7 +2019,7 @@ function renderLog() {
                   ${Math.round(pct)}%
                 </div>
               ` : ''}
-              <button class="btn-icon-sm" onclick="event.stopPropagation();openShareDay('${d}')" aria-label="Share day" style="background:transparent;border:none;color:var(--text-dim);padding:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <button class="btn-icon-sm" onclick="event.stopPropagation();openShareDay('${d}')" aria-label="${t('share.title')}" style="background:transparent;border:none;color:var(--text-dim);padding:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
               </button>
             </div>
@@ -2016,7 +2045,7 @@ async function openShareDay(date) {
     <div style="position:relative;text-align:center;padding:20px 0;">
       <div class="spinner" style="margin:0 auto 16px;"></div>
       <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);">
-        Generating share card...
+        ${t('share.generating')}
       </div>
     </div>
   `);
@@ -2039,31 +2068,31 @@ async function openShareDay(date) {
 
     openModal(`
       <div style="position:relative;">
-        <button class="modal-close-btn" onclick="closeShareModal()" aria-label="Close">
+        <button class="modal-close-btn" onclick="closeShareModal()" aria-label="${t('common.close')}">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
-        <h2 class="modal-title">Share day</h2>
+        <h2 class="modal-title">${t('share.title')}</h2>
         <div style="background:var(--bg-elev-2);border-radius:12px;overflow:hidden;margin-bottom:16px;">
-          <img src="${url}" alt="Day summary" style="width:100%;display:block;">
+          <img src="${url}" alt="" style="width:100%;display:block;">
         </div>
         <div style="display:grid;grid-template-columns:${canShareFiles ? '1fr 1fr' : '1fr'};gap:10px;">
           ${canShareFiles ? `
             <button class="btn btn-secondary" onclick="downloadShareImage()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              Download
+              ${t('share.download')}
             </button>
             <button class="btn btn-primary" onclick="shareDayImage()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-              Share
+              ${t('share.share')}
             </button>
           ` : `
             <button class="btn btn-primary" onclick="downloadShareImage()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              Download image
+              ${t('share.downloadImage')}
             </button>
           `}
         </div>
-        ${!canShareFiles ? `<div style="margin-top:12px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);text-align:center;letter-spacing:0.05em;">On mobile: long-press image to save</div>` : ''}
+        ${!canShareFiles ? `<div style="margin-top:12px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);text-align:center;letter-spacing:0.05em;">${t('share.longPress')}</div>` : ''}
       </div>
     `);
 
@@ -2074,7 +2103,7 @@ async function openShareDay(date) {
   } catch (err) {
     console.error(err);
     closeModal();
-    toast('Could not generate share card', 'danger');
+    toast(t('toast.shareCardFailed'), 'danger');
   }
 }
 
@@ -2096,7 +2125,7 @@ function downloadShareImage() {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  toast('Downloaded');
+  toast(t('toast.downloaded'));
 }
 
 async function shareDayImage() {
@@ -2107,13 +2136,13 @@ async function shareDayImage() {
     const file = new File([blob], filename, { type: 'image/png' });
     await navigator.share({
       files: [file],
-      title: 'FUEL — Day summary',
-      text: 'My nutrition log'
+      title: t('share.nativeTitle'),
+      text: t('share.nativeText')
     });
   } catch (err) {
     if (err.name !== 'AbortError') {
       console.error(err);
-      toast('Sharing failed', 'danger');
+      toast(t('toast.shareFailed'), 'danger');
     }
   }
 }
@@ -2194,8 +2223,8 @@ async function renderShareCard(date) {
   ctx.fillStyle = C.textDim;
   ctx.font = '500 22px "JetBrains Mono", monospace';
   ctx.textAlign = 'right';
-  const weekday = dt.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-  const monthDay = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+  const weekday = dt.toLocaleDateString(locale(), { weekday: 'short' }).toUpperCase();
+  const monthDay = dt.toLocaleDateString(locale(), { month: 'short', day: 'numeric' }).toUpperCase();
   ctx.fillText(`${weekday} · ${monthDay}`, W - 80, headerY);
 
   // === CALORIE RING ===
@@ -2235,12 +2264,12 @@ async function renderShareCard(date) {
   // " / target kcal" below
   ctx.fillStyle = C.textDim;
   ctx.font = '500 26px "JetBrains Mono", monospace';
-  ctx.fillText(`/ ${target.kcal} KCAL`, ringCX, ringCY + 50);
+  ctx.fillText(`/ ${target.kcal} ${t('unit.kcal').toUpperCase()}`, ringCX, ringCY + 50);
 
   // Percentage label below ring
   ctx.fillStyle = ringColor;
   ctx.font = 'bold 32px "Archivo Black", sans-serif';
-  ctx.fillText(`${pct}% OF TARGET`, ringCX, ringCY + ringR + 70);
+  ctx.fillText(t('share.ofTarget', { n: pct }), ringCX, ringCY + ringR + 70);
 
   // === MACRO BARS ===
   const macroY = 800;
@@ -2249,9 +2278,9 @@ async function renderShareCard(date) {
   const macroStartX = (W - 3 * macroW - 2 * macroGap) / 2;
 
   const macros = [
-    { key: 'p', label: 'PROTEIN', color: C.macroP, value: Math.round(totals.p), target: target.p },
-    { key: 'c', label: 'CARBS', color: C.macroC, value: Math.round(totals.c), target: target.c },
-    { key: 'f', label: 'FAT', color: C.macroF, value: Math.round(totals.f), target: target.f }
+    { key: 'p', label: t('macro.proteinCaps'), color: C.macroP, value: Math.round(totals.p), target: target.p },
+    { key: 'c', label: t('macro.carbsCaps'), color: C.macroC, value: Math.round(totals.c), target: target.c },
+    { key: 'f', label: t('macro.fatCaps'), color: C.macroF, value: Math.round(totals.f), target: target.f }
   ];
 
   macros.forEach((m, i) => {
@@ -2275,7 +2304,7 @@ async function renderShareCard(date) {
     ctx.fillStyle = C.textDim;
     ctx.font = '400 16px "JetBrains Mono", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`${m.target}g`, x + macroW - 22, macroY + 32);
+    ctx.fillText(`${m.target}${t('unit.g')}`, x + macroW - 22, macroY + 32);
 
     // Value
     ctx.fillStyle = C.text;
@@ -2288,7 +2317,7 @@ async function renderShareCard(date) {
     // " g" suffix — slightly smaller, baseline-aligned to value
     ctx.fillStyle = C.textMuted;
     ctx.font = '500 20px "JetBrains Mono", monospace';
-    ctx.fillText(' g', x + 22 + valueWidth + 4, valueY);
+    ctx.fillText(' ' + t('unit.g'), x + 22 + valueWidth + 4, valueY);
 
     // Progress bar
     const barX = x + 22;
@@ -2308,11 +2337,11 @@ async function renderShareCard(date) {
 
   // === SUMMARY ROWS ===
   const rows = [];
-  if (mealCount > 0) rows.push({ icon: '🍽️', text: `${mealCount} ${mealCount === 1 ? 'meal' : 'meals'} logged` });
-  if (day.trained) rows.push({ icon: '💪', text: 'Training day', color: C.accent });
-  if (day.weight) rows.push({ icon: '⚖️', text: `${day.weight} kg` });
-  if (day.steps) rows.push({ icon: '👟', text: `${day.steps.toLocaleString('en-US')} steps` });
-  if (streak >= 2) rows.push({ icon: '🔥', text: `${streak}-day streak`, color: C.accent });
+  if (mealCount > 0) rows.push({ icon: '🍽️', text: t('share.mealsLogged', { n: plural(mealCount, 'plural.meals') }) });
+  if (day.trained) rows.push({ icon: '💪', text: t('share.trainingDay'), color: C.accent });
+  if (day.weight) rows.push({ icon: '⚖️', text: `${day.weight} ${t('unit.kg')}` });
+  if (day.steps) rows.push({ icon: '👟', text: plural(day.steps, 'plural.steps', false, day.steps.toLocaleString(locale())) });
+  if (streak >= 2) rows.push({ icon: '🔥', text: t('share.streak', { n: plural(streak, 'plural.daysStreak') }), color: C.accent });
 
   const rowsStartY = 1010;
   const rowHeight = 50;
@@ -2399,7 +2428,7 @@ function renderStats() {
     const tracked = days.filter(d => d.kcal > 0);
     const trainings = days.filter(d => d.trained).length;
     weeks.push({
-      label: w === 0 ? 'This week' : `${w} week${w > 1 ? 's' : ''} ago`,
+      label: w === 0 ? t('stats.thisWeek') : t('stats.weeksAgo', { n: plural(w, 'plural.weeks') }),
       avgKcal: tracked.length > 0 ? Math.round(tracked.reduce((s,d) => s + d.kcal, 0) / tracked.length) : 0,
       trackedDays: tracked.length,
       trainings
@@ -2438,35 +2467,35 @@ function renderStats() {
     <div class="screen">
       <div class="header">
         <div class="logo">FUEL</div>
-        <div class="eyebrow">Progress</div>
+        <div class="eyebrow">${t('nav.stats')}</div>
       </div>
 
       <div class="today-banner">
-        <div class="eyebrow">Streak</div>
-        <h1 class="today-title">${streak} ${streak === 1 ? 'day' : 'days'}</h1>
-        <p class="today-sub">${streak >= 7 ? '🔥 Keep it up!' : streak === 0 ? 'Track today to start a streak.' : 'Building consistency.'}</p>
+        <div class="eyebrow">${t('stats.streak')}</div>
+        <h1 class="today-title">${plural(streak, 'plural.days')}</h1>
+        <p class="today-sub">${streak >= 7 ? '🔥 ' + t('stats.keepUp') : streak === 0 ? t('stats.startStreak') : t('stats.building')}</p>
       </div>
 
-      <h3 class="section-title">Last 7 days</h3>
+      <h3 class="section-title">${t('stats.last7')}</h3>
       <div class="card">
         ${render7DayChart(last7, target)}
       </div>
 
-      <h3 class="section-title">Macro split <span class="count">last 7d</span></h3>
+      <h3 class="section-title">${t('stats.macroSplit')} <span class="count">${t('stats.last7short')}</span></h3>
       ${macroSum.kcal > 0 ? `
         <div class="card">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
             <div style="text-align:center;">
               <div style="font-family:var(--font-display);font-size:28px;color:var(--macro-protein);">${macroPctP}%</div>
-              <div class="eyebrow" style="margin-top:4px;">PROTEIN</div>
+              <div class="eyebrow" style="margin-top:4px;">${t('macro.proteinCaps')}</div>
             </div>
             <div style="text-align:center;">
               <div style="font-family:var(--font-display);font-size:28px;color:var(--macro-carbs);">${macroPctC}%</div>
-              <div class="eyebrow" style="margin-top:4px;">CARBS</div>
+              <div class="eyebrow" style="margin-top:4px;">${t('macro.carbsCaps')}</div>
             </div>
             <div style="text-align:center;">
               <div style="font-family:var(--font-display);font-size:28px;color:var(--macro-fat);">${macroPctF}%</div>
-              <div class="eyebrow" style="margin-top:4px;">FAT</div>
+              <div class="eyebrow" style="margin-top:4px;">${t('macro.fatCaps')}</div>
             </div>
           </div>
           <div style="display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--bg-elev-3);">
@@ -2475,39 +2504,39 @@ function renderStats() {
             <div style="width:${macroPctF}%;background:var(--macro-fat);"></div>
           </div>
         </div>
-      ` : `<div class="card"><div class="empty"><div>No meals logged in the past week.</div></div></div>`}
+      ` : `<div class="card"><div class="empty"><div>${t('stats.noMeals')}</div></div></div>`}
 
-      <h3 class="section-title">Weekly summary</h3>
+      <h3 class="section-title">${t('stats.weekly')}</h3>
       <div class="card" style="padding:0;">
         ${weeks.map((w, i) => `
           <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;${i < weeks.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}">
             <div>
               <div style="font-weight:600;font-size:13px;">${w.label}</div>
               <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:2px;">
-                ${w.trackedDays} days tracked · ${w.trainings} ${w.trainings === 1 ? 'training' : 'trainings'}
+                ${t('stats.tracked', { n: plural(w.trackedDays, 'plural.days') })} · ${plural(w.trainings, 'plural.trainings')}
               </div>
             </div>
             <div style="text-align:right;">
               <div style="font-family:var(--font-display);font-size:18px;color:var(--accent);">${w.avgKcal || '—'}</div>
-              <div class="eyebrow">AVG KCAL</div>
+              <div class="eyebrow">${t('stats.avgKcal')}</div>
             </div>
           </div>
         `).join('')}
       </div>
 
-      <h3 class="section-title">Profile</h3>
+      <h3 class="section-title">${t('stats.profile')}</h3>
       <div class="card">
         <div class="list-row">
-          <span class="list-row-label">Goal</span>
-          <span class="list-row-value">${({cut:'Lose fat', maintain:'Maintain', bulk:'Build muscle'})[STATE.profile.goal]}</span>
+          <span class="list-row-label">${t('stats.goal')}</span>
+          <span class="list-row-value">${t('goal.' + STATE.profile.goal)}</span>
         </div>
         <div class="list-row">
-          <span class="list-row-label">Activity</span>
-          <span class="list-row-value">${STATE.profile.activity}</span>
+          <span class="list-row-label">${t('stats.activity')}</span>
+          <span class="list-row-value">${hasKey('activity.' + STATE.profile.activity) ? t('activity.' + STATE.profile.activity) : escapeHtml(STATE.profile.activity)}</span>
         </div>
         <div class="list-row">
-          <span class="list-row-label">Daily target</span>
-          <span class="list-row-value" style="color:var(--accent);">${target} kcal</span>
+          <span class="list-row-label">${t('common.dailyTarget')}</span>
+          <span class="list-row-value" style="color:var(--accent);">${target} ${t('unit.kcal')}</span>
         </div>
       </div>
     </div>
@@ -2530,7 +2559,7 @@ function render7DayChart(days, target) {
   return `
     <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:180px;">
       <line x1="${pad.left}" y1="${targetY}" x2="${w - pad.right}" y2="${targetY}" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
-      <text x="${w - pad.right}" y="${targetY - 4}" fill="var(--accent)" font-family="JetBrains Mono" font-size="9" text-anchor="end">target ${target}</text>
+      <text x="${w - pad.right}" y="${targetY - 4}" fill="var(--accent)" font-family="JetBrains Mono" font-size="9" text-anchor="end">${t('stats.target', { n: target })}</text>
       ${days.map((d, i) => {
         const x = pad.left + i * (innerW / days.length) + gap / 2;
         const barH = (d.kcal / maxKcal) * innerH;
@@ -2542,7 +2571,7 @@ function render7DayChart(days, target) {
         return `
           <rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="3" fill="${fill}"/>
           ${d.kcal > 0 ? `<text x="${x + barW/2}" y="${y - 4}" fill="var(--text)" font-family="JetBrains Mono" font-size="9" text-anchor="middle">${d.kcal}</text>` : ''}
-          <text x="${x + barW/2}" y="${h - 14}" fill="var(--text-muted)" font-family="JetBrains Mono" font-size="9" text-anchor="middle">${dt.toLocaleDateString('en-US',{weekday:'short'}).slice(0,3)}</text>
+          <text x="${x + barW/2}" y="${h - 14}" fill="var(--text-muted)" font-family="JetBrains Mono" font-size="9" text-anchor="middle">${dt.toLocaleDateString(locale(),{weekday:'short'}).replace('.', '').slice(0,3)}</text>
           <text x="${x + barW/2}" y="${h - 4}" fill="var(--text-muted)" font-family="JetBrains Mono" font-size="9" text-anchor="middle">${dt.getDate()}</text>
         `;
       }).join('')}
@@ -2565,96 +2594,95 @@ function openSettings() {
 
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="${t('common.close')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <h2 class="modal-title">Settings</h2>
+      <h2 class="modal-title">${t('settings.title')}</h2>
 
-      <div class="eyebrow" style="margin-bottom:8px;">Photo recognition</div>
+      <div class="eyebrow" style="margin-bottom:8px;">${t('settings.language')}</div>
+      <div class="pill-row" style="margin-bottom:24px;">
+        ${SUPPORTED_LANGS.map(l => `<span class="pill ${getLang() === l.id ? 'active' : ''}" onclick="changeLanguage('${l.id}')">${l.label}</span>`).join('')}
+      </div>
+
+      <div class="eyebrow" style="margin-bottom:8px;">${t('settings.photo')}</div>
       <p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;line-height:1.5;">
-        Paste your Anthropic API key to enable photo-based food recognition. Photos go directly to api.anthropic.com — nothing is stored on any server.
-        Get a key at <span style="color:var(--accent);">console.anthropic.com</span>.
+        ${t('settings.photoText')}
+        ${t('settings.getKey')} <span style="color:var(--accent);">console.anthropic.com</span>.
       </p>
       <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." value="${profile?.apiKey ? '••••••••••••' + profile.apiKey.slice(-4) : ''}" style="text-align:left;font-family:var(--font-mono);font-size:13px;font-weight:400;">
       <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:24px;">
-        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="saveApiKey()">Save key</button>
-        ${profile?.apiKey ? `<button class="btn btn-ghost btn-sm" onclick="clearApiKey()">Remove</button>` : ''}
+        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="saveApiKey()">${t('settings.saveKey')}</button>
+        ${profile?.apiKey ? `<button class="btn btn-ghost btn-sm" onclick="clearApiKey()">${t('settings.removeKey')}</button>` : ''}
       </div>
 
-      <div class="eyebrow" style="margin-bottom:8px;">Goal</div>
+      <div class="eyebrow" style="margin-bottom:8px;">${t('stats.goal')}</div>
       <div class="pill-row">
         ${[
-          { id: 'cut', label: 'Lose fat' },
-          { id: 'maintain', label: 'Maintain' },
-          { id: 'bulk', label: 'Build muscle' }
+          { id: 'cut', label: t('goal.cut') },
+          { id: 'maintain', label: t('goal.maintain') },
+          { id: 'bulk', label: t('goal.bulk') }
         ].map(g => `<span class="pill ${profile?.goal === g.id ? 'active' : ''}" onclick="changeGoal('${g.id}')">${g.label}</span>`).join('')}
       </div>
 
-      <div class="eyebrow" style="margin:24px 0 8px;">Activity level</div>
+      <div class="eyebrow" style="margin:24px 0 8px;">${t('settings.activity')}</div>
       <div class="pill-row">
-        ${[
-          { id: 'sedentary', label: 'Sedentary' },
-          { id: 'light', label: 'Light' },
-          { id: 'moderate', label: 'Moderate' },
-          { id: 'active', label: 'Active' },
-          { id: 'very', label: 'Very active' }
-        ].map(a => `<span class="pill ${profile?.activity === a.id ? 'active' : ''}" onclick="changeActivity('${a.id}')">${a.label}</span>`).join('')}
+        ${['sedentary', 'light', 'moderate', 'active', 'very'].map(id => ({ id, label: t('activity.' + id) })).map(a => `<span class="pill ${profile?.activity === a.id ? 'active' : ''}" onclick="changeActivity('${a.id}')">${a.label}</span>`).join('')}
       </div>
 
-      <div class="eyebrow" style="margin:24px 0 8px;">Daily calorie target</div>
+      <div class="eyebrow" style="margin:24px 0 8px;">${t('settings.target')}</div>
       <div class="card" style="padding:14px;">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
           <div>
-            <div style="font-family:var(--font-display);font-size:22px;color:var(--accent);">${calcCalorieTarget(profile)} kcal</div>
-            <div class="eyebrow" style="margin-top:2px;">${customTarget ? 'CUSTOM OVERRIDE' : 'AUTO-CALCULATED'}</div>
+            <div style="font-family:var(--font-display);font-size:22px;color:var(--accent);">${calcCalorieTarget(profile)} ${t('unit.kcal')}</div>
+            <div class="eyebrow" style="margin-top:2px;">${customTarget ? t('settings.customOverride') : t('settings.autoCalc')}</div>
           </div>
-          ${customTarget ? `<button class="btn btn-ghost btn-sm" onclick="resetTarget()">Reset to auto</button>` : ''}
+          ${customTarget ? `<button class="btn btn-ghost btn-sm" onclick="resetTarget()">${t('settings.resetAuto')}</button>` : ''}
         </div>
-        ${customTarget ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">Auto would be: ${autoTarget} kcal</div>` : ''}
+        ${customTarget ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">${t('settings.autoWouldBe', { n: autoTarget })}</div>` : ''}
       </div>
-      <button class="btn btn-secondary btn-sm btn-block" style="margin-top:8px;" onclick="openCustomTarget()">Set custom target</button>
+      <button class="btn btn-secondary btn-sm btn-block" style="margin-top:8px;" onclick="openCustomTarget()">${t('settings.setCustom')}</button>
 
-      <div class="eyebrow" style="margin:24px 0 8px;">My foods</div>
+      <div class="eyebrow" style="margin:24px 0 8px;">${t('settings.myFoods')}</div>
       ${(STATE.customFoods && STATE.customFoods.length)
         ? STATE.customFoods.map((cf, i) => `
           <div class="food-result" style="cursor:default;">
             <div class="meal-thumb" style="background:var(--bg-elev-2);">${cf.emoji || '⭐'}</div>
             <div class="food-result-info">
               <div class="food-result-name">${escapeHtml(cf.name)}</div>
-              <div class="food-result-meta">per 100g · ${cf.kcal} kcal · P ${cf.p} · C ${cf.c} · F ${cf.f}</div>
+              <div class="food-result-meta">${t('add.per', { u: '100 ' + t('unit.g') })} · ${cf.kcal} ${t('unit.kcal')} · ${t('macro.pShort')} ${cf.p} · ${t('macro.cShort')} ${cf.c} · ${t('macro.fShort')} ${cf.f}</div>
             </div>
-            <button class="btn-icon" onclick="editCustomFood(${i})" aria-label="Edit">
+            <button class="btn-icon" onclick="editCustomFood(${i})" aria-label="${t('common.edit')}">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
-            <button class="btn-icon" onclick="deleteCustomFood(${i})" aria-label="Delete" style="color:var(--danger);">
+            <button class="btn-icon" onclick="deleteCustomFood(${i})" aria-label="${t('common.delete')}" style="color:var(--danger);">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
             </button>
           </div>
         `).join('')
-        : `<p style="color:var(--text-dim);font-size:12px;line-height:1.5;">No saved foods yet. When you add a meal manually, flip <strong>Save to my foods</strong> to reuse it from search.</p>`
+        : `<p style="color:var(--text-dim);font-size:12px;line-height:1.5;">${t('settings.noFoods', { toggle: '<strong>' + t('manual.saveToggle') + '</strong>' })}</p>`
       }
 
-      <div class="eyebrow" style="margin:24px 0 8px;">Data</div>
+      <div class="eyebrow" style="margin:24px 0 8px;">${t('settings.data')}</div>
       <button class="btn btn-secondary btn-block btn-sm" onclick="exportData()" style="margin-bottom:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-        Export backup (JSON)
+        ${t('settings.export')}
       </button>
       <button class="btn btn-secondary btn-block btn-sm" onclick="importData()" style="margin-bottom:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-        Import backup
+        ${t('settings.import')}
       </button>
       <button class="btn btn-secondary btn-block btn-sm" onclick="checkPersistent()" style="margin-bottom:6px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8C4 5.6 7.6 2 12 2s8 3.6 8 8.2C20 17.5 12 22 12 22z"/></svg>
-        Storage: ${STATE.storagePersistent ? 'Persistent ✓' : 'Tap to make persistent'}
+        ${STATE.storagePersistent ? t('settings.storagePersistent') : t('settings.storageTap')}
       </button>
 
-      <div class="eyebrow" style="margin:24px 0 8px;">Danger</div>
+      <div class="eyebrow" style="margin:24px 0 8px;">${t('settings.danger')}</div>
       <button class="btn btn-danger btn-block btn-sm" onclick="confirmReset()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-        Reset all data
+        ${t('settings.reset')}
       </button>
 
-      <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;">FUEL · v1.0.2</div>
+      <div style="text-align:center;margin-top:24px;color:var(--text-muted);font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;">FUEL · v${APP_VERSION}</div>
     </div>
   `);
 }
@@ -2664,34 +2692,34 @@ function editCustomFood(idx) {
   if (!cf) return;
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="openSettings()" aria-label="Back">
+      <button class="modal-close-btn" onclick="openSettings()" aria-label="${t('common.back')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
-      <h2 class="modal-title">Edit food</h2>
-      <p style="color:var(--text-dim);font-size:12px;margin-bottom:16px;line-height:1.5;">Values are per 100 g — they scale to any portion when you add this food.</p>
+      <h2 class="modal-title">${t('cf.title')}</h2>
+      <p style="color:var(--text-dim);font-size:12px;margin-bottom:16px;line-height:1.5;">${t('cf.hint')}</p>
 
-      <label>Name</label>
+      <label>${t('manual.name')}</label>
       <input type="text" id="cf-name" value="${escapeHtml(cf.name)}" style="text-align:left;font-size:15px;font-weight:500;font-family:var(--font-body);">
 
-      <label style="margin-top:16px;">Calories (kcal / 100g)</label>
+      <label style="margin-top:16px;">${t('cf.kcal')}</label>
       <input type="number" id="cf-kcal" value="${cf.kcal}" min="0">
 
       <div class="qty-row" style="margin-top:16px;">
         <div class="qty-input-group">
-          <label>Protein g</label>
+          <label>${t('manual.protein')}</label>
           <input type="number" id="cf-p" value="${cf.p}" min="0" step="0.1">
         </div>
         <div class="qty-input-group">
-          <label>Carbs g</label>
+          <label>${t('manual.carbs')}</label>
           <input type="number" id="cf-c" value="${cf.c}" min="0" step="0.1">
         </div>
       </div>
       <div class="qty-input-group" style="margin:16px 0;">
-        <label>Fat g</label>
+        <label>${t('manual.fat')}</label>
         <input type="number" id="cf-f" value="${cf.f}" min="0" step="0.1">
       </div>
 
-      <button class="btn btn-primary btn-block btn-lg" onclick="saveCustomFood(${idx})">Save</button>
+      <button class="btn btn-primary btn-block btn-lg" onclick="saveCustomFood(${idx})">${t('common.save')}</button>
     </div>
   `);
 }
@@ -2701,15 +2729,15 @@ function saveCustomFood(idx) {
   if (!cf) return;
   const name = document.getElementById('cf-name').value.trim();
   const kcal = parseFloat(document.getElementById('cf-kcal').value) || 0;
-  if (!name) { toast('Enter a name', 'danger'); return; }
-  if (kcal <= 0) { toast('Enter calories', 'danger'); return; }
+  if (!name) { toast(t('toast.enterName'), 'danger'); return; }
+  if (kcal <= 0) { toast(t('toast.enterKcal'), 'danger'); return; }
   cf.name = name;
   cf.kcal = Math.round(kcal);
   cf.p = parseFloat(document.getElementById('cf-p').value) || 0;
   cf.c = parseFloat(document.getElementById('cf-c').value) || 0;
   cf.f = parseFloat(document.getElementById('cf-f').value) || 0;
   save();
-  toast('Saved');
+  toast(t('toast.saved'));
   openSettings();
 }
 
@@ -2718,11 +2746,11 @@ function deleteCustomFood(idx) {
   if (!cf) return;
   openModal(`
     <div style="position:relative;">
-      <h2 class="modal-title">Delete food?</h2>
-      <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;line-height:1.5;">Remove <strong>${escapeHtml(cf.name)}</strong> from your foods? Meals you already logged with it stay unchanged.</p>
+      <h2 class="modal-title">${t('cf.deleteTitle')}</h2>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;line-height:1.5;">${t('cf.deleteText', { name: '<strong>' + escapeHtml(cf.name) + '</strong>' })}</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <button class="btn btn-secondary" onclick="openSettings()">Cancel</button>
-        <button class="btn btn-danger" onclick="confirmDeleteCustomFood(${idx})">Delete</button>
+        <button class="btn btn-secondary" onclick="openSettings()">${t('common.cancel')}</button>
+        <button class="btn btn-danger" onclick="confirmDeleteCustomFood(${idx})">${t('common.delete')}</button>
       </div>
     </div>
   `);
@@ -2731,7 +2759,7 @@ function deleteCustomFood(idx) {
 function confirmDeleteCustomFood(idx) {
   if (Array.isArray(STATE.customFoods)) STATE.customFoods.splice(idx, 1);
   save();
-  toast('Deleted');
+  toast(t('toast.deleted'));
   openSettings();
 }
 
@@ -2740,19 +2768,27 @@ function saveApiKey() {
   const value = inp.value.trim();
   if (!value || value.startsWith('••')) return;
   if (!value.startsWith('sk-ant-')) {
-    toast('Key should start with sk-ant-', 'danger');
+    toast(t('toast.keyPrefix'), 'danger');
     return;
   }
   STATE.profile.apiKey = value;
   save();
-  toast('API key saved');
+  toast(t('toast.keySaved'));
   openSettings();
 }
 
 function clearApiKey() {
   STATE.profile.apiKey = null;
   save();
-  toast('API key removed');
+  toast(t('toast.keyRemoved'));
+  openSettings();
+}
+
+function changeLanguage(lang) {
+  if (lang === getLang()) return;
+  setLang(lang);
+  applyStaticI18n();
+  renderApp();
   openSettings();
 }
 
@@ -2761,7 +2797,7 @@ function changeGoal(goal) {
   STATE.customTarget = null; // reset auto calibration on goal change
   STATE.lastCalibration = 0;
   save();
-  toast(`Goal: ${({cut:'Lose fat', maintain:'Maintain', bulk:'Build muscle'})[goal]}`);
+  toast(t('toast.goal', { name: t('goal.' + goal) }));
   openSettings();
 }
 
@@ -2769,7 +2805,7 @@ function changeActivity(activity) {
   STATE.profile.activity = activity;
   STATE.customTarget = null;
   save();
-  toast(`Activity updated`);
+  toast(t('toast.activity'));
   openSettings();
 }
 
@@ -2777,17 +2813,17 @@ function openCustomTarget() {
   const current = calcCalorieTarget(STATE.profile);
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="openSettings()" aria-label="Back">
+      <button class="modal-close-btn" onclick="openSettings()" aria-label="${t('common.back')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <h2 class="modal-title">Custom target</h2>
+      <h2 class="modal-title">${t('ct.title')}</h2>
       <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">
-        Override the auto-calculated target. Once set, FUEL won't auto-adjust this number based on your weight trend.
+        ${t('ct.text')}
       </p>
       <input type="number" id="ct-input" value="${current}" step="50" min="800" max="6000" style="font-size:48px;padding:24px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;">
-        <button class="btn btn-secondary" onclick="openSettings()">Cancel</button>
-        <button class="btn btn-primary" onclick="confirmCustomTarget()">Save</button>
+        <button class="btn btn-secondary" onclick="openSettings()">${t('common.cancel')}</button>
+        <button class="btn btn-primary" onclick="confirmCustomTarget()">${t('common.save')}</button>
       </div>
     </div>
   `);
@@ -2796,10 +2832,10 @@ function openCustomTarget() {
 
 function confirmCustomTarget() {
   const v = parseInt(document.getElementById('ct-input').value);
-  if (!v || v < 800 || v > 6000) { toast('Enter 800-6000', 'danger'); return; }
+  if (!v || v < 800 || v > 6000) { toast(t('toast.targetRange'), 'danger'); return; }
   STATE.customTarget = v;
   save();
-  toast(`Target: ${v} kcal/day`);
+  toast(t('toast.targetSet', { n: v }));
   openSettings();
 }
 
@@ -2807,7 +2843,7 @@ function resetTarget() {
   STATE.customTarget = null;
   STATE.lastCalibration = 0;
   save();
-  toast('Reset to auto');
+  toast(t('toast.resetAuto'));
   openSettings();
 }
 
@@ -2831,7 +2867,7 @@ function exportData() {
   URL.revokeObjectURL(url);
   STATE.lastBackup = Date.now();
   save();
-  toast('Backup exported');
+  toast(t('toast.exported'));
 }
 
 function importData() {
@@ -2847,7 +2883,7 @@ function importData() {
         const data = JSON.parse(ev.target.result);
         if (!data.profile || !data.log) throw new Error('Invalid backup file');
 
-        if (!confirm('This will replace all your current data. Continue?')) return;
+        if (!confirm(t('import.confirm'))) return;
 
         STATE.profile = data.profile;
         STATE.log = data.log;
@@ -2856,9 +2892,9 @@ function importData() {
         save();
         closeModal();
         renderApp();
-        toast('Backup restored');
+        toast(t('toast.restored'));
       } catch (err) {
-        toast('Invalid backup file', 'danger');
+        toast(t('toast.invalidBackup'), 'danger');
       }
     };
     reader.readAsText(file);
@@ -2868,26 +2904,26 @@ function importData() {
 
 async function checkPersistent() {
   const granted = await requestPersistentStorage();
-  toast(granted ? 'Storage is now persistent ✓' : 'Browser declined persistent storage');
+  toast(granted ? t('toast.persistOk') : t('toast.persistNo'));
   openSettings();
 }
 
 function confirmReset() {
   openModal(`
     <div style="position:relative;">
-      <button class="modal-close-btn" onclick="openSettings()" aria-label="Back">
+      <button class="modal-close-btn" onclick="openSettings()" aria-label="${t('common.back')}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
-      <h2 class="modal-title" style="color:var(--danger);">Reset all data?</h2>
+      <h2 class="modal-title" style="color:var(--danger);">${t('reset.title')}</h2>
       <p style="color:var(--text-dim);font-size:14px;margin-bottom:20px;line-height:1.5;">
-        This will permanently delete your profile, all logs, weight history, and settings. This cannot be undone.
+        ${t('reset.text')}
       </p>
       <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;">
-        Consider exporting a backup first.
+        ${t('reset.hint')}
       </p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <button class="btn btn-secondary" onclick="openSettings()">Cancel</button>
-        <button class="btn btn-danger" onclick="doReset()">Delete all</button>
+        <button class="btn btn-secondary" onclick="openSettings()">${t('common.cancel')}</button>
+        <button class="btn btn-danger" onclick="doReset()">${t('reset.confirm')}</button>
       </div>
     </div>
   `);
@@ -2901,7 +2937,7 @@ function doReset() {
   STATE.lastCalibration = 0;
   closeModal();
   renderApp();
-  toast('All data cleared');
+  toast(t('toast.cleared'));
 }
 
 // ============== ROUTER & INIT ==============
@@ -2943,6 +2979,7 @@ function setupNav() {
 
 function init() {
   load();
+  applyStaticI18n();
   setupNav();
   renderApp();
   requestPersistentStorage();

@@ -1,11 +1,12 @@
 // FUEL — Service Worker
 // Версия билда — меняется при каждом релизе
-const BUILD_VERSION = '2026-11-26-v1.0.2';
+const BUILD_VERSION = '2026-11-26-v1.1.0';
 const CACHE_NAME = `fuel-${BUILD_VERSION}`;
 const ASSETS = [
   '/',
   '/index.html',
   '/css/styles.css',
+  '/js/i18n.js',
   '/js/app.js',
   '/js/foods.js',
   '/js/recipes.js',
