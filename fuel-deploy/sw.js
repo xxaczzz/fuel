@@ -1,6 +1,6 @@
 // FUEL — Service Worker
 // Версия билда — меняется при каждом релизе
-const BUILD_VERSION = '2026-11-26-v1.1.0';
+const BUILD_VERSION = '2026-11-26-v1.1.0-2';
 const CACHE_NAME = `fuel-${BUILD_VERSION}`;
 const ASSETS = [
   '/',
@@ -20,13 +20,23 @@ const ASSETS = [
   '/assets/icons/apple-touch-icon.png'
 ];
 
-// Install — cache shell
+// Install — cache shell.
+// /js/* and /css/* are served with max-age=86400, so a plain fetch here can be answered
+// from the browser HTTP cache with last release's files (seen on iOS Safari in v1.1.0).
+// Each asset is fetched under a build-specific URL (never in HTTP cache) with
+// cache: 'reload', then stored under its clean path, which is what the page requests.
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing version', CACHE_NAME);
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS).catch(err => {
+    caches.open(CACHE_NAME).then(cache => Promise.all(ASSETS.map(url =>
+      fetch(new Request(url + '?v=' + encodeURIComponent(BUILD_VERSION), { cache: 'reload' }))
+        .then(res => {
+          if (!res.ok) throw new Error(url + ' ' + res.status);
+          return cache.put(url, res);
+        })
+    ))).catch(err => {
       console.warn('[SW] Some assets failed to cache:', err);
-    }))
+    })
   );
 });
 
